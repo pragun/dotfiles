@@ -75,6 +75,8 @@ source ~/dotfiles/fzf-tab-completion/zsh/fzf-zsh-completion.sh
 export FZF_COMPLETION_TRIGGER=','
 export FZF_DEFAULT_COMMAND='fd --type f'
 source /home/pragun/.config/broot/launcher/bash/br
+source ~/dotfiles/atuin-init.zsh
+
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -96,18 +98,13 @@ function brg {
     br --conf ~/.config/broot/git-diff-conf.toml --git-status
 }
 
-function lg {
-	lazygit
-}
 
 function kssh {
   kitten ssh $@
 }
 
-function src {
-  cd ~/src
-}
-
 source ~/src/gimli-rcs/pragun.zshrc
 source ~/dotfiles/docker_aliases.sh
+export BALENA_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzIwNjQ5LCJleHAiOjE3MjkxMzExNjIsImp3dF9zZWNyZXQiOiJMNFFBVDJIMlpQTFpMNDRFWEUzVUZBM1ZYTzNWUFU2TSIsImF1dGhUaW1lIjoxNzI5MDAxNTYyOTI2LCJpYXQiOjE3MjkwMTg1NjN9.1AP_sIkPTaJcmh6LoQALDhhIyNeuLl6TWJava9Av1vw
+export GIMLI_REMOTE=10.0.0.211
 

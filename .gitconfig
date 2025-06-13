@@ -14,25 +14,32 @@
 	helper = 
 	helper = !/usr/bin/gh auth git-credential
 [diff]
-	tool = kdiff3
+	tool = meld
+
+[difftool "meld"]
+	cmd = /usr/bin/meld "$LOCAL" "$BASE" "$REMOTE"
 
 [difftool "kdiff3"]
-        path = /usr/bin/kdiff3
+	path = /usr/bin/kdiff3
+
 [difftool]
         prompt = false
         keepBackup = false
 	trustExitCode = false
 
 [merge]
-	tool = kdiff3
+	tool = meld
 
 [mergetool]
         prompt = false
         keepBackup = false
-        keepTemporaries = false
-[mergetool "kdiff3"]
+	keepTemporaries = false
 
-        path = /usr/bin/kdiff3 
+[mergetool "kdiff3"]
+	cmd = /usr/bin/kdiff3 $BASE $LOCAL -o $MERGED
+
+[mergetool "meld"]
+	cmd = /usr/bin/meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
 
 [alias]
   addm = "!git ls-files --deleted --modified --other --exclude-standard | fzf -0 -m --preview 'git diff --color=always {-1}' | xargs -r git add"
@@ -50,3 +57,20 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+[core]
+	editor = vi
+
+[credential]
+	credentialStore = cache
+	helper = 
+	helper = /usr/local/bin/git-credential-manager
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[credential "https://gitlab.example.com"]
+	gitLabDevClientId = caace8c507d86df55c7ab528d15f33d0e1a43a69a5f5ef1f4f81004d9c66daf2
+	gitLabDevClientSecret = gloas-78bbe5a35b1e1c429f020d54f0c09910a3adbd34bbbc7a049542500d67989ff3
+[credential "https://gitlab.ocado.tech"]
+	gitLabDevClientId = caace8c507d86df55c7ab528d15f33d0e1a43a69a5f5ef1f4f81004d9c66daf2
+	gitLabDevClientSecret = gloas-78bbe5a35b1e1c429f020d54f0c09910a3adbd34bbbc7a049542500d67989ff3
+	gitLabAuthModes = browser
+	provider = gitlab
