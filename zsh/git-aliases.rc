@@ -1,0 +1,21 @@
+
+alias ga='git add'
+alias gd='git diff'
+alias gdt='git difftool -d'
+alias gst='git status'
+alias gco='git checkout'
+alias gcm='git checkout main'
+alias gb='git branch'
+alias gup='git pull'
+alias gpu='git push'
+alias gups='git push --set-upstream origin $(git_current_branch)'
+alias gmrg='git merge'
+alias grbs='git rebase'
+alias gcpk='git cherry-pick'
+alias lg='lazygit'
+alias gcp='git checkout -'
+alias gcl='git clone'
+alias gl='git log'
+alias gfa='git fetch -a'
+
+

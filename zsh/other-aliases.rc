@@ -1,0 +1,3 @@
+alias edit-dotfiles='zed $DOTFILES'
+alias yz='yazi'
+alias lt='tree -C'

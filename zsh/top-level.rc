@@ -1,0 +1,78 @@
+#!/bin/zsh
+
+readonly SCRIPT_DIR=$(dirname $(readlink $HOME/.zshrc))/zsh
+echo $SCRIPT_DIR
+
+source $SCRIPT_DIR/oh-my-zsh.rc
+source $SCRIPT_DIR/git-aliases.rc
+source $SCRIPT_DIR/docker-aliases.rc
+source $SCRIPT_DIR/atuin-init.zsh
+source $SCRIPT_DIR/other-aliases.rc
+
+# export PATH=$PATH:~/.local/nvim-linux64/bin
+# export PATH=$PATH:~/.local/git-fuzzy/bin
+# export PATH=$PATH:~/.local/fd-v10.1.0-x86_64-unknown-linux-gnu
+# export PATH=$PATH:~/.local/bat-v0.24.0-x86_64-unknown-linux-gnu
+# export PATH=$PATH:~/.local/nu-0.93.0-x86_64-linux-gnu-full
+# export PATH=$PATH:~/.local/atuin-v18.2.0-x86_64-unknown-linux-gnu
+# export PATH=$PATH:~/.local/fmz
+# export PATH=$PATH:~/.local/broot-1.39.0/x86_64-linux
+# export PATH=~/.local/bin:$PATH
+# export PATH=$PATH:~/miniforge3/bin
+# export PATH=$PATH:/home/pragun/bin
+# export PATH=$PATH:/usr/lib/go-1.21/bin
+# export PATH=$PATH:$(go env GOPATH)/bin
+
+FZF_ALT_C_COMMAND=
+FZF_CTRL_T_COMMAND=
+FZF_CTRL_R_COMMAND=
+eval "$(fzf --zsh)"
+
+# Remove bindings for ctrl+s, ctrl+r
+bindkey -M emacs -r '^s'
+bindkey -M vicmd -r '^s'
+bindkey -M viins -r '^s'
+
+bindkey -M emacs -r '^r'
+bindkey -M vicmd -r '^r'
+bindkey -M viins -r '^r'
+
+# Add bindings for reverse search
+# bindkey -M emacs '^sr' fzf-history-widget
+# bindkey -M vicmd '^sr' fzf-history-widget
+# bindkey -M viins '^sr' fzf-history-widget
+
+# set less mode
+export LESS=FRX
+## From https://stackoverflow.com/questions/69091601/git-branch-displays-my-branch-names-in-a-vim-window-instead-of-in-my-current-it
+
+# source $DOTFILES/fzf_completions.zsh
+# source $DOTFILES/fzf_keybindings.zsh
+# source $DOTFILES/fzf-docker/fzf-docker.plugin.zsh
+source $SCRIPT_DIR/fzf-tab-completion/zsh/fzf-zsh-completion.sh
+bindkey '^I' fzf_completion
+
+export FZF_COMPLETION_TRIGGER=','
+export FZF_DEFAULT_COMMAND='fd --type f'
+# source /home/pragun/.config/broot/launcher/bash/br
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/pragun/miniforge3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/pragun/miniforge3/etc/profile.d/conda.sh" ]; then
+        . "/home/pragun/miniforge3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/pragun/miniforge3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+conda deactivate
+
+function brg {
+    br --conf ~/.config/broot/git-diff-conf.toml --git-status
+}

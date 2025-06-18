@@ -11,9 +11,9 @@ wezterm.on('update-right-status', function(window, pane)
   window:set_right_status(name or '')
 end)
 
-config.color_scheme = "Catppuccin Latte"
--- config.font = wezterm.font("Fira Code")
-
+config.color_scheme = "Catppuccin Frappe"
+config.font = wezterm.font("Fira Code")
+config.font_size = 15
 config.leader = { key = 'b', mods = 'CTRL' }
 config.keys = {
   -- Leader, followed by 'r' will put us in resize-pane
@@ -59,7 +59,7 @@ config.keys = {
           },
         },
       },
-    },  
+    },
   {
     key = 'p',
     mods = 'LEADER',
@@ -137,7 +137,7 @@ config.key_tables = {
     { key = 'u', action = act.PaneSelect { mode = "SwapWithActive" }, },
     { key = 'o', action = act.PaneSelect { mode = "MoveToNewTab" }, },
     { key = 'p', action = act.PaneSelect { mode = "MoveToNewWindow" }, },
-    
+
     { key = 'q', action = act.CloseCurrentPane { confirm = true }, },
 
     { key = 'Escape', action = 'PopKeyTable' },
