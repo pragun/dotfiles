@@ -6,7 +6,6 @@ echo $SCRIPT_DIR
 source $SCRIPT_DIR/oh-my-zsh.rc
 source $SCRIPT_DIR/git-aliases.rc
 source $SCRIPT_DIR/docker-aliases.rc
-source $SCRIPT_DIR/atuin-init.zsh
 source $SCRIPT_DIR/other-aliases.rc
 
 # export PATH=$PATH:~/.local/nvim-linux64/bin
@@ -73,6 +72,4 @@ unset __conda_setup
 # <<< conda initialize <<<
 conda deactivate
 
-function brg {
-    br --conf ~/.config/broot/git-diff-conf.toml --git-status
-}
+source $SCRIPT_DIR/atuin-init.zsh
