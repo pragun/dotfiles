@@ -18,11 +18,11 @@
       "space f": "file_finder::Toggle",
       "space o": "tab_switcher::Toggle",
       "space e": "project_panel::ToggleFocus",
-      "space v": "editor::GoToDefinitionSplit"
+      "space v": "editor::GoToDefinitionSplit",
       // Since sneak does not show highlights of the two letters
       // its kind of useless for now
-      // "space s": "vim::PushSneak",
-      // "space shift-s": "vim::PushSneakBackward"
+      "space s": "vim::PushSneak",
+      "space shift-s": "vim::PushSneakBackward"
     }
   },
   {
@@ -81,10 +81,9 @@
       // Traditional Vim behavior
       "q": "vim::AnyQuotes",
       "b": "vim::AnyBrackets",
-
       // mini.ai plugin behavior
-      "Q": "vim::MiniQuotes",
-      "B": "vim::MiniBrackets"
+      "m": "vim::MiniBrackets",
+      "Q": "vim::MiniQuotes"
     }
   }
   // This stuff is from the link above,
