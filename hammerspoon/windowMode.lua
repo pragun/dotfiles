@@ -128,7 +128,7 @@ function M.setup(modalMgr)
     end)
 
     -- Activate modal
-    modalMgr.supervisor:bind('cmd', 'E', "Resize", function()
+    modalMgr.supervisor:bind('alt', 'E', "Resize", function()
         modalMgr:activate({ "resize" }, '#74BB67', true)
     end)
 
