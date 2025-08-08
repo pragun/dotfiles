@@ -30,6 +30,7 @@ export PATH=$PATH:~/.local/nu-0.93.0-x86_64-linux-gnu-full
 export PATH=$PATH:~/.local/atuin-v18.2.0-x86_64-unknown-linux-gnu
 export PATH=~/.local/bin:$PATH
 export PATH=$PATH:$(go env GOPATH)/bin
+export PATH=$PATH:/usr/local/share/dotnet/
 
 source ~/.local/bin/fzf-git.sh
 eval "$(fzf --bash)"
