@@ -61,5 +61,13 @@
         }
       }
     }
+  },
+  "languages": {
+    "Markdown": {
+      "remove_trailing_whitespace_on_save": false
+    }
+  },
+  "features": {
+    "edit_prediction_provider": "copilot"
   }
 }
