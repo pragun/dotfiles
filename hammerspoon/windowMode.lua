@@ -36,13 +36,57 @@ local actions = {
     move_left = function()
         local win = hs.window.frontmostWindow()
         ensureNotFullscreen(win)
-        win:moveToUnit(hs.layout.left50)
+        local screen = win:screen():frame()
+        local frame = win:frame()
+        -- Check if window is already at left50
+        if math.abs(frame.x - screen.x) < 2 and math.abs(frame.w - screen.w/2) < 2 then
+            -- Already at left, move to right
+            win:moveToUnit(hs.layout.right50)
+        else
+            win:moveToUnit(hs.layout.left50)
+        end
     end,
 
     move_right = function()
         local win = hs.window.frontmostWindow()
         ensureNotFullscreen(win)
-        win:moveToUnit(hs.layout.right50)
+        local screen = win:screen():frame()
+        local frame = win:frame()
+        -- Check if window is already at right50
+        if math.abs((frame.x + frame.w) - (screen.x + screen.w)) < 2 and math.abs(frame.w - screen.w/2) < 2 then
+            -- Already at right, move to left
+            win:moveToUnit(hs.layout.left50)
+        else
+            win:moveToUnit(hs.layout.right50)
+        end
+    end,
+
+    move_up = function()
+        local win = hs.window.frontmostWindow()
+        ensureNotFullscreen(win)
+        local screen = win:screen():frame()
+        local frame = win:frame()
+        -- Check if window is already at top50
+        if math.abs(frame.y - screen.y) < 2 and math.abs(frame.h - screen.h/2) < 2 then
+            -- Already at top, move to bottom
+            win:moveToUnit(hs.layout.bottom50)
+        else
+            win:moveToUnit(hs.layout.top50)
+        end
+    end,
+
+    move_down = function()
+        local win = hs.window.frontmostWindow()
+        ensureNotFullscreen(win)
+        local screen = win:screen():frame()
+        local frame = win:frame()
+        -- Check if window is already at bottom50
+        if math.abs((frame.y + frame.h) - (screen.y + screen.h)) < 2 and math.abs(frame.h - screen.h/2) < 2 then
+            -- Already at bottom, move to top
+            win:moveToUnit(hs.layout.top50)
+        else
+            win:moveToUnit(hs.layout.bottom50)
+        end
     end,
 
     center_window = function()
@@ -113,6 +157,8 @@ local actions = {
 local default_keybindings = {
     move_left = { modifiers = {}, key = 'h', description = "Move Left" },
     move_right = { modifiers = {}, key = 'l', description = "Move Right" },
+    move_up = { modifiers = {}, key = 'k', description = "Move Up" },
+    move_down = { modifiers = {}, key = 'j', description = "Move Down"},
     center_window = { modifiers = {}, key = 'c', description = "Center" },
     maximize_window = { modifiers = {}, key = 'M', description = "Maximize" },
     fullscreen_window = { modifiers = { 'shift' }, key = 'M', description = "Fullscreen [Bad]" },
