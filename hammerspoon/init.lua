@@ -52,3 +52,25 @@ hs.hotkey.bind({ "cmd", "ctrl" }, "L", function()
         hs.alert.show("Not Fusion 360")
     end
 end)
+
+wf = hs.window.filter.new()
+
+wf:subscribe(hs.window.filter.windowFullscreened, function(win, appName)
+    -- set window size to the full screen size, but not true fullscreen mode
+    -- afer a delay of 0.5 seconds to allow the fullscreen transition to complete   
+    delay = 0.5
+    hs.timer.doAfter(delay, 
+        function()
+            win:setFullScreen(false)
+            local screen = win:screen():frame()
+            local frame = { x = screen.x, y = screen.y, w = screen.w, h = screen.h }
+            win:setFrame(frame)
+            hs.alert.show(appName .. " prevented from going fullscreen")
+        end
+    )    
+end)
+
+
+
+
+
