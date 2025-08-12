@@ -7,16 +7,17 @@ local windowMode = require("windowMode")
 
 local leftHandWindowKeybindings = {
     move_left = { modifiers = {}, key = 'a', description = "Move Left" },
-    move_right = { modifiers = {}, key = 'f', description = "Move Right" },
+    change_screen = { modifiers = {}, key = 'f', description = "Change Screen" },
     center_window = { modifiers = {}, key = 'c', description = "Center Window" },
     maximize_window = { modifiers = {}, key = 'b', description = "Maximize" },              -- Changed from 'M' to 'f'
     fullscreen_window = { modifiers = { 'shift' }, key = 'b', description = "Fullscreen" }, -- Changed from 'M' to 'f'
     medium_size_window = { modifiers = {}, key = 'v', description = "Medium Size" },        -- Changed from 'N' to 'm'
-    next_window_same_app = { modifiers = {}, key = 's', description = "Next Window" },      -- Changed from 'O' to 'n'
+    move_up = { modifiers = {}, key = 's', description = "Move Up" },      -- Changed from 'O' to 'n'
     prev_window_same_app = { modifiers = {}, key = 'd', description = "Previous Window" },  -- Changed from 'P' to 'p'
     show_mission_control = { modifiers = {}, key = 'z', description = "Mission Control" },  -- Changed from 'A' to 'space'
     show_desktop = { modifiers = { 'shift' }, key = 'x', description = "Show Desktop" },    -- Changed from 'D' to 'shift+space'
-    reload_config = { modifiers = { 'shift' }, key = 'z', description = "Reload Config" }   -- Changed from 'shift+Z' to 'cmd+r'
+    reload_config = { modifiers = { 'shift' }, key = 'z', description = "Reload Config" },   -- Changed from 'shift+Z' to 'cmd+r'
+    move_grid = { modifiers = {}, key = 'g', description = "Show Grid" } -- Added grid toggle
 }
 
 windowMode.setup(spoon.ModalMgr, leftHandWindowKeybindings)

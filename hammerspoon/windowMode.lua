@@ -61,6 +61,26 @@ local actions = {
         end
     end,
 
+    move_grid = function ()
+        hs.grid.show()
+    end,
+
+    change_screen = function()
+        local win = hs.window.frontmostWindow()
+        if not win then
+            hs.alert.show("No active window")
+            return
+        end
+
+        local screen = win:screen()
+        local nextScreen = screen:next()
+        if nextScreen then
+            win:moveToScreen(nextScreen)
+        else
+            hs.alert.show("No other screen available")
+        end
+    end,
+
     move_up = function()
         local win = hs.window.frontmostWindow()
         ensureNotFullscreen(win)
@@ -69,9 +89,23 @@ local actions = {
         -- Check if window is already at top50
         if math.abs(frame.y - screen.y) < 2 and math.abs(frame.h - screen.h/2) < 2 then
             -- Already at top, move to bottom
-            win:moveToUnit(hs.layout.bottom50)
+            -- create a new frame at bottom50, bottmo50 is not defined in hs.layout
+            local newFrame = {
+                x = screen.x,
+                y = screen.y + screen.h / 2,
+                w = screen.w,
+                h = screen.h / 2
+            }
+            win:setFrame(newFrame)
+            
         else
-            win:moveToUnit(hs.layout.top50)
+            local newFrame = {
+                x = screen.x,
+                y = screen.y,
+                w = screen.w,
+                h = screen.h / 2
+            }
+            win:setFrame(newFrame)    
         end
     end,
 
@@ -82,10 +116,23 @@ local actions = {
         local frame = win:frame()
         -- Check if window is already at bottom50
         if math.abs((frame.y + frame.h) - (screen.y + screen.h)) < 2 and math.abs(frame.h - screen.h/2) < 2 then
+            local newFrame = {
+                x = screen.x,
+                y = screen.y,
+                w = screen.w,
+                h = screen.h / 2
+            }
+            win:setFrame(newFrame)
             -- Already at bottom, move to top
-            win:moveToUnit(hs.layout.top50)
+            -- create a new frame at top50, top50 is not defined in hs.layout    
         else
-            win:moveToUnit(hs.layout.bottom50)
+            local newFrame = {
+                x = screen.x,
+                y = screen.y + screen.h / 2,
+                w = screen.w,
+                h = screen.h / 2
+            }
+            win:setFrame(newFrame)    
         end
     end,
 
@@ -158,6 +205,7 @@ local default_keybindings = {
     move_left = { modifiers = {}, key = 'h', description = "Move Left" },
     move_right = { modifiers = {}, key = 'l', description = "Move Right" },
     move_up = { modifiers = {}, key = 'k', description = "Move Up" },
+    move_grid = { modifiers = {}, key = 'g', description = "Show Grid" },
     move_down = { modifiers = {}, key = 'j', description = "Move Down"},
     center_window = { modifiers = {}, key = 'c', description = "Center" },
     maximize_window = { modifiers = {}, key = 'M', description = "Maximize" },
@@ -167,7 +215,8 @@ local default_keybindings = {
     prev_window_same_app = { modifiers = {}, key = 'P', description = "Prev Window (Same App)" },
     show_mission_control = { modifiers = {}, key = 'A', description = "Mission Control" },
     show_desktop = { modifiers = {}, key = 'D', description = "Desktop" },
-    reload_config = { modifiers = { 'shift' }, key = 'Z', description = "Reload Config" }
+    reload_config = { modifiers = { 'shift' }, key = 'Z', description = "Reload Config" },
+    change_screen = { modifiers = {}, key = 'C', description = "Change Screen" } -- Added screen change
 }
 
 function M.setup(modalMgr, keybindings)
@@ -177,10 +226,10 @@ function M.setup(modalMgr, keybindings)
     modalMgr:new("resize")
     local resizeModal = modalMgr.modal_list["resize"]
 
-    -- Bind all configured actions
+    -- Bind all configured actions, skip if key is empty string
     for action_name, binding in pairs(bindings) do
         local action_func = actions[action_name]
-        if action_func then
+        if action_func and binding.key and binding.key ~= '' then
             resizeModal:bind(binding.modifiers, binding.key, binding.description, action_func)
         end
     end
