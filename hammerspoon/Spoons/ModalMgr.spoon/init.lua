@@ -14,8 +14,8 @@ obj.author = "ashfinal <ashfinal@gmail.com>"
 obj.homepage = "https://github.com/Hammerspoon/Spoons"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
-obj.modal_tray = nil
-obj.which_key = nil
+obj.modal_tray_list = {}
+obj.which_key_list = {}
 obj.modal_list = {}
 obj.active_list = {}
 obj.supervisor = nil
@@ -37,21 +37,32 @@ function obj:init()
     obj.supervisor:bind(hsupervisor_keys[1], hsupervisor_keys[2], "Reset Modal Environment", function() obj.supervisor:exit() end)
     hshelp_keys = hshelp_keys or {{"alt", "shift"}, "/"}
     obj.supervisor:bind(hshelp_keys[1], hshelp_keys[2], "Toggle Help Panel", function() obj:toggleCheatsheet({all=obj.supervisor}) end)
-    obj.modal_tray = hs.canvas.new({x = 0, y = 0, w = 0, h = 0})
-    obj.modal_tray:level(hs.canvas.windowLevels.tornOffMenu)
-    obj.modal_tray[1] = {
-        type = "circle",
-        action = "fill",
-        fillColor = {hex = "#FFFFFF", alpha = 0.7},
-    }
-    obj.which_key = hs.canvas.new({x = 0, y = 0, w = 0, h = 0})
-    obj.which_key:level(hs.canvas.windowLevels.tornOffMenu)
-    obj.which_key[1] = {
-        type = "rectangle",
-        action = "fill",
-        fillColor = {hex = "#EEEEEE", alpha = 0.85},
-        roundedRectRadii = {xRadius = 10, yRadius = 10},
-    }
+    obj:createCanvasesForAllScreens()
+end
+
+function obj:createCanvasesForAllScreens()
+    obj.modal_tray_list = {}
+    obj.which_key_list = {}
+    for _, screen in ipairs(hs.screen.allScreens()) do
+        local cres = screen:fullFrame()
+        local tray = hs.canvas.new({x = 0, y = 0, w = 0, h = 0}):level(hs.canvas.windowLevels.tornOffMenu)
+        tray[1] = {
+            type = "circle",
+            action = "fill",
+            fillColor = {hex = "#FFFFFF", alpha = 0.7},
+        }
+        obj.modal_tray_list[screen:id()] = tray
+
+        local which_key = hs.canvas.new({x = 0, y = 0, w = 0, h = 0}):level(hs.canvas.windowLevels.popUpMenu)
+        which_key:behavior({"canJoinAllSpaces"})
+        which_key[1] = {
+            type = "rectangle",
+            action = "fill",
+            fillColor = {hex = "#EEEEEE", alpha = 0.85},
+            roundedRectRadii = {xRadius = 10, yRadius = 10},
+        }
+        obj.which_key_list[screen:id()] = which_key
+    end
 end
 
 --- ModalMgr:new(id)
@@ -70,57 +81,51 @@ end
 --
 -- by default, it fills by row
 -- but it can be customized to fill by column
-function insertIntoSheet(position, st, row, column, n)
-   local textAlign = "left"
-   local xpos
-   local ypos
-   -- height available for one item, in percentage
-   -- add one for a small margin of at least 1/2 element at the bottom
-   local h = 100 / (math.ceil(n*1.0/2) + 1)
-   local w = "47%"
-   local xposLeft = "3%"
-   local xposRight = "50%"
-   if obj.fillByRow then
-      if position %2 == 1 then
-         xpos = xposLeft
-         ypos = tostring(math.floor(h * position / 2)) .. "%"
-      else
-         -- this one goes to the right
-         textAlign =  obj.alignmentRigthColumn
-         xpos = xposRight
-         ypos = tostring(math.floor(h * (position-1) / 2)) .. "%"
-      end
-   else
-      local actualPos
-      if position > math.ceil(n / 2) then
-         -- this one goes to the right
-         textAlign =  obj.alignmentRightColumn
-         xpos = xposRight
-         actualPos = position - math.ceil(n*1.0/2)
-      else
-         xpos = xposLeft
-         actualPos = position
-      end
-      ypos = tostring(math.floor(actualPos * h)) .. "%"
-   end
-
---   print(ypos, n, h)
-   obj.which_key[position + 1] = {
-      type = "text",
-      text = st,
-      textFont = "JetbrainsMono Nerd Font",
-      textSize = 16,
-      textColor = {hex = "#2390FF", alpha = 1},
-      textAlignment = textAlign,
-      frame = {
-         x = xpos,
-         y = ypos,
-         --         w = tostring((1 - 80 / (cres.w / 5 * 3)) / 2),
-         w = w,
-         h = tostring(math.floor(h)) .. "%"
-      }
-   }
-
+function insertIntoSheetAllScreens(position, st, row, column, n)
+    local textAlign = "left"
+    local xpos
+    local ypos
+    local h = 100 / (math.ceil(n*1.0/2) + 1)
+    local w = "47%"
+    local xposLeft = "3%"
+    local xposRight = "50%"
+    if obj.fillByRow then
+        if position %2 == 1 then
+            xpos = xposLeft
+            ypos = tostring(math.floor(h * position / 2)) .. "%"
+        else
+            textAlign =  obj.alignmentRigthColumn
+            xpos = xposRight
+            ypos = tostring(math.floor(h * (position-1) / 2)) .. "%"
+        end
+    else
+        local actualPos
+        if position > math.ceil(n / 2) then
+            textAlign =  obj.alignmentRightColumn
+            xpos = xposRight
+            actualPos = position - math.ceil(n*1.0/2)
+        else
+            xpos = xposLeft
+            actualPos = position
+        end
+        ypos = tostring(math.floor(actualPos * h)) .. "%"
+    end
+    for _, which_key in pairs(obj.which_key_list) do
+        which_key[position + 1] = {
+            type = "text",
+            text = st,
+            textFont = "JetbrainsMono Nerd Font",
+            textSize = 16,
+            textColor = {hex = "#2390FF", alpha = 1},
+            textAlignment = textAlign,
+            frame = {
+                x = xpos,
+                y = ypos,
+                w = w,
+                h = tostring(math.floor(h)) .. "%"
+            }
+        }
+    end
 end
 
 --- ModalMgr:toggleCheatsheet([idList], [force])
@@ -132,42 +137,42 @@ end
 ---  * force - A optional boolean value to force show cheatsheet, defaults to `nil` (automatically).
 
 function obj:toggleCheatsheet(iterList, force)
-    if obj.which_key:isShowing() and not force then
-        obj.which_key:hide()
+    local anyShowing = false
+    for _, which_key in pairs(obj.which_key_list) do
+        if which_key:isShowing() then anyShowing = true break end
+    end
+    if anyShowing and not force then
+        for _, which_key in pairs(obj.which_key_list) do which_key:hide() end
     else
-        local cscreen = hs.screen.mainScreen()
-        local cres = cscreen:fullFrame()
-
-        local framew = math.max(math.floor(cres.w  * obj.width_factor),obj.min_width)
-        local frameh = math.max(math.floor(cres.h  * obj.height_factor), obj.min_height)
-        obj.which_key:frame({
-              w = framew,
-              h = frameh,
-              x = cres.x + (cres.w - framew) /2,
-              y = cres.y + (cres.h - frameh) /2
-        })
+        for _, screen in ipairs(hs.screen.allScreens()) do
+            local cres = screen:fullFrame()
+            local framew = math.max(math.floor(cres.w  * obj.width_factor),obj.min_width)
+            local frameh = math.max(math.floor(cres.h  * obj.height_factor), obj.min_height)
+            local which_key = obj.which_key_list[screen:id()]
+            which_key:frame({
+                w = framew,
+                h = frameh,
+                x = cres.x + (cres.w - framew) /2,
+                y = cres.y + (cres.h - frameh) /2
+            })
+        end
         local keys_pool = {}
         local tmplist = iterList or obj.active_list
         for i, v in pairs(tmplist) do
             if type(v) == "string" then
-                -- It appears to be idList
                 for _, m in ipairs(obj.modal_list[v].keys) do
                     table.insert(keys_pool, m.msg)
                 end
             elseif type(i) == "string" then
-                -- It appears to be active_list
                 for _, m in pairs(v.keys) do
                     table.insert(keys_pool, m.msg)
                 end
             end
         end
-        --        if obj.orderByColumn then
-        if true then
-           for idx, val in ipairs(keys_pool) do
-              insertIntoSheet(idx,val, idx, 0, #keys_pool)
-           end
+        for idx, val in ipairs(keys_pool) do
+            insertIntoSheetAllScreens(idx,val, idx, 0, #keys_pool)
         end
-        obj.which_key:show()
+        for _, which_key in pairs(obj.which_key_list) do which_key:show() end
     end
 end
 
@@ -186,16 +191,18 @@ function obj:activate(idList, trayColor, showKeys)
         obj.active_list[val] = obj.modal_list[val]
     end
     if trayColor then
-        local cscreen = hs.screen.mainScreen()
-        local cres = cscreen:fullFrame()
-        obj.modal_tray:frame({
-            x = cres.w - math.ceil(cres.w / 32),
-            y = cres.h - math.ceil(cres.w / 32),
-            w = math.ceil(cres.w / 32 / 2),
-            h = math.ceil(cres.w / 32 / 2)
-        })
-        obj.modal_tray[1].fillColor = {hex = trayColor, alpha = 0.7}
-        obj.modal_tray:show()
+        for _, screen in ipairs(hs.screen.allScreens()) do
+            local cres = screen:fullFrame()
+            local tray = obj.modal_tray_list[screen:id()]
+            tray:frame({
+                x = cres.w - math.ceil(cres.w / 32),
+                y = cres.h - math.ceil(cres.w / 32),
+                w = math.ceil(cres.w / 32 / 2),
+                h = math.ceil(cres.w / 32 / 2)
+            })
+            tray[1].fillColor = {hex = trayColor, alpha = 0.7}
+            tray:show()
+        end
     end
     if showKeys then
         obj:toggleCheatsheet(idList, true)
@@ -214,11 +221,13 @@ function obj:deactivate(idList)
         obj.modal_list[val]:exit()
         obj.active_list[val] = nil
     end
-    obj.modal_tray:hide()
-    for i = 2, #obj.which_key do
-        obj.which_key:removeElement(2)
+    for _, tray in pairs(obj.modal_tray_list) do tray:hide() end
+    for _, which_key in pairs(obj.which_key_list) do
+        for i = 2, #which_key do
+            which_key:removeElement(2)
+        end
+        which_key:hide()
     end
-    obj.which_key:hide()
 end
 
 --- ModalMgr:deactivateAll()
