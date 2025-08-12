@@ -1,3 +1,4 @@
+hs.loadSpoon('EmmyLua')
 local modalMgr = hs.loadSpoon("ModalMgr")
 
 -- Add modules folder to package path if needed
@@ -70,6 +71,11 @@ wf:subscribe(hs.window.filter.windowFullscreened, function(win, appName)
         end
     )    
 end)
+
+
+
+
+
 
 
 
