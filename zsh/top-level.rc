@@ -21,7 +21,7 @@ source $SCRIPT_DIR/other-aliases.rc
 # export PATH=$PATH:/home/pragun/bin
 # export PATH=$PATH:/usr/lib/go-1.21/bin
 # export PATH=$PATH:$(go env GOPATH)/bin
-export PATH=$PATH:/usr/local/share/dotnet:~/.dotnet/tools
+export PATH=$PATH:/usr/local/share/dotnet:~/.dotnet/tools:~/.local/bin
 
 FZF_ALT_C_COMMAND=
 FZF_CTRL_T_COMMAND=
