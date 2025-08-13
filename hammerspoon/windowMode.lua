@@ -33,6 +33,31 @@ end
 
 -- Window management actions
 local actions = {
+    close_window = function()
+        local win = hs.window.frontmostWindow()
+        if win then
+            ensureNotFullscreen(win)
+            win:close()
+        else
+            hs.alert.show("No active window")
+        end
+    end,
+
+    quit_app = function()
+        local win = hs.window.frontmostWindow()
+        if win then
+            ensureNotFullscreen(win)
+            local app = win:application()
+            if app then
+                app:kill()
+            else
+                hs.alert.show("No active application")
+            end
+        else
+            hs.alert.show("No active window")
+        end
+    end,
+
     move_left = function()
         local win = hs.window.frontmostWindow()
         ensureNotFullscreen(win)
@@ -216,7 +241,9 @@ local default_keybindings = {
     show_mission_control = { modifiers = {}, key = 'A', description = "Mission Control" },
     show_desktop = { modifiers = {}, key = 'D', description = "Desktop" },
     reload_config = { modifiers = { 'shift' }, key = 'Z', description = "Reload Config" },
-    change_screen = { modifiers = {}, key = 'C', description = "Change Screen" } -- Added screen change
+    change_screen = { modifiers = {}, key = 'C', description = "Change Screen" }, -- Added screen change
+    close_window = { modifiers = {}, key = 'W', description = "Close Window" },
+    quit_app = { modifiers = {}, key = 'Q', description = "Quit App"}
 }
 
 function M.setup(modalMgr, keybindings)

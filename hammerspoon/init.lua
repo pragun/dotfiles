@@ -18,7 +18,9 @@ local leftHandWindowKeybindings = {
     show_mission_control = { modifiers = {}, key = 'z', description = "Mission Control" },  -- Changed from 'A' to 'space'
     show_desktop = { modifiers = { 'shift' }, key = 'x', description = "Show Desktop" },    -- Changed from 'D' to 'shift+space'
     reload_config = { modifiers = { 'shift' }, key = 'z', description = "Reload Config" },   -- Changed from 'shift+Z' to 'cmd+r'
-    move_grid = { modifiers = {}, key = 'g', description = "Show Grid" } -- Added grid toggle
+    move_grid = { modifiers = {}, key = 'g', description = "Show Grid" }, -- Added grid toggle
+    close_window = { modifiers = {}, key = 'w', description = "Close Window" }, -- Added close window
+    quit_app = { modifiers = {}, key = 'q', description = "Quit App" } -- Added quit app
 }
 
 windowMode.setup(spoon.ModalMgr, leftHandWindowKeybindings)
