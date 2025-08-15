@@ -190,18 +190,24 @@ function obj:activate(idList, trayColor, showKeys)
         obj.modal_list[val]:enter()
         obj.active_list[val] = obj.modal_list[val]
     end
+    obj:createCanvasesForAllScreens() -- refresh for current screens
     if trayColor then
-        for _, screen in ipairs(hs.screen.allScreens()) do
-            local cres = screen:fullFrame()
-            local tray = obj.modal_tray_list[screen:id()]
-            tray:frame({
-                x = cres.w - math.ceil(cres.w / 32),
-                y = cres.h - math.ceil(cres.w / 32),
-                w = math.ceil(cres.w / 32 / 2),
-                h = math.ceil(cres.w / 32 / 2)
-            })
-            tray[1].fillColor = {hex = trayColor, alpha = 0.7}
-            tray:show()
+        local screens = hs.screen.allScreens()
+        if screens then
+            for _, screen in ipairs(screens) do
+                local cres = screen:fullFrame()
+                local tray = obj.modal_tray_list[screen:id()]
+                if tray then
+                    tray:frame({
+                        x = cres.w - math.ceil(cres.w / 32),
+                        y = cres.h - math.ceil(cres.w / 32),
+                        w = math.ceil(cres.w / 32 / 2),
+                        h = math.ceil(cres.w / 32 / 2)
+                    })
+                    tray[1].fillColor = {hex = trayColor, alpha = 0.7}
+                    tray:show()
+                end
+            end
         end
     end
     if showKeys then
