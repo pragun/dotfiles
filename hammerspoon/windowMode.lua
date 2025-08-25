@@ -32,6 +32,57 @@ function switchWindow(count)
 end
 
 -- Window management actions
+-- Helper for vertical window movement (up/down)
+local function moveVertical(direction)
+    -- direction: "up" or "down"
+    local win = hs.window.frontmostWindow()
+    ensureNotFullscreen(win)
+    local screen = win:screen():frame()
+    local frame = win:frame()
+    local halfHeight = screen.h / 2
+    if direction == "up" then
+        -- Check if window is already at top50
+        if math.abs(frame.y - screen.y) < 2 then
+            -- Already at top, move to bottom
+            local newFrame = {
+                x = screen.x,
+                y = screen.y + halfHeight,
+                w = screen.w,
+                h = halfHeight
+            }
+            win:setFrame(newFrame)
+        else
+            local newFrame = {
+                x = screen.x,
+                y = screen.y,
+                w = screen.w,
+                h = halfHeight
+            }
+            win:setFrame(newFrame)
+        end
+    elseif direction == "down" then
+        -- Check if window is already at bottom50
+        if math.abs((frame.y + frame.h) - (screen.y + screen.h)) < 2 then
+            -- Already at bottom, move to top
+            local newFrame = {
+                x = screen.x,
+                y = screen.y,
+                w = screen.w,
+                h = halfHeight
+            }
+            win:setFrame(newFrame)
+        else
+            local newFrame = {
+                x = screen.x,
+                y = screen.y + halfHeight,
+                w = screen.w,
+                h = halfHeight
+            }
+            win:setFrame(newFrame)
+        end
+    end
+end
+
 local actions = {
     close_window = function()
         local win = hs.window.frontmostWindow()
@@ -107,58 +158,11 @@ local actions = {
     end,
 
     move_up = function()
-        local win = hs.window.frontmostWindow()
-        ensureNotFullscreen(win)
-        local screen = win:screen():frame()
-        local frame = win:frame()
-        -- Check if window is already at top50
-        if math.abs(frame.y - screen.y) < 2 and math.abs(frame.h - screen.h/2) < 2 then
-            -- Already at top, move to bottom
-            -- create a new frame at bottom50, bottmo50 is not defined in hs.layout
-            local newFrame = {
-                x = screen.x,
-                y = screen.y + screen.h / 2,
-                w = screen.w,
-                h = screen.h / 2
-            }
-            win:setFrame(newFrame)
-            
-        else
-            local newFrame = {
-                x = screen.x,
-                y = screen.y,
-                w = screen.w,
-                h = screen.h / 2
-            }
-            win:setFrame(newFrame)    
-        end
+        moveVertical("up")
     end,
 
     move_down = function()
-        local win = hs.window.frontmostWindow()
-        ensureNotFullscreen(win)
-        local screen = win:screen():frame()
-        local frame = win:frame()
-        -- Check if window is already at bottom50
-        if math.abs((frame.y + frame.h) - (screen.y + screen.h)) < 2 and math.abs(frame.h - screen.h/2) < 2 then
-            local newFrame = {
-                x = screen.x,
-                y = screen.y,
-                w = screen.w,
-                h = screen.h / 2
-            }
-            win:setFrame(newFrame)
-            -- Already at bottom, move to top
-            -- create a new frame at top50, top50 is not defined in hs.layout    
-        else
-            local newFrame = {
-                x = screen.x,
-                y = screen.y + screen.h / 2,
-                w = screen.w,
-                h = screen.h / 2
-            }
-            win:setFrame(newFrame)    
-        end
+        moveVertical("down")
     end,
 
     center_window = function()
