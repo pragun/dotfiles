@@ -226,6 +226,10 @@ local actions = {
 
     reload_config = function()
         hs.reload()
+    end,
+
+    screenshot = function()
+        hs.eventtap.keyStroke({"cmd", "shift"}, "9")
     end
 }
 
@@ -247,7 +251,8 @@ local default_keybindings = {
     reload_config = { modifiers = { 'shift' }, key = 'Z', description = "Reload Config" },
     change_screen = { modifiers = {}, key = 'C', description = "Change Screen" }, -- Added screen change
     close_window = { modifiers = {}, key = 'W', description = "Close Window" },
-    quit_app = { modifiers = {}, key = 'Q', description = "Quit App"}
+    quit_app = { modifiers = {}, key = 'Q', description = "Quit App" },
+    screenshot = { modifiers = {}, key = 'r', description = "Take Screenshot" }
 }
 
 function M.setup(modalMgr, keybindings)
