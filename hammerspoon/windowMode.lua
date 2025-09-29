@@ -226,10 +226,6 @@ local actions = {
 
     reload_config = function()
         hs.reload()
-    end,
-
-    screenshot = function()
-        hs.eventtap.keyStroke({"cmd", "shift"}, "9")
     end
 }
 
@@ -274,6 +270,16 @@ function M.setup(modalMgr, keybindings)
     resizeModal:bind({}, 'escape', "Exit", function()
         modalMgr:deactivateAll()
     end)
+
+    resizeModal:bind(keybindings.screenshot.modifiers, keybindings.screenshot.key, keybindings.screenshot.description,
+        function ()
+            modalMgr:deactivateAll()
+            -- delay to ensure modal is closed before taking screenshot
+            hs.timer.doAfter(1.5, function()
+                hs.eventtap.keyStroke({"cmd", "shift"}, "9")
+            end)
+        end
+    )
 
     -- Activate modal
     modalMgr.supervisor:bind('alt', 'E', "Resize", function()
