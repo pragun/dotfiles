@@ -283,7 +283,12 @@ function M.setup(modalMgr, keybindings)
 
     -- Activate modal
     modalMgr.supervisor:bind('alt', 'E', "Resize", function()
-        modalMgr:activate({ "resize" }, '#74BB67', true)
+        -- Check if resize modal is already active
+        if modalMgr.active_list["resize"] then
+            modalMgr:deactivateAll()
+        else
+            modalMgr:activate({ "resize" }, '#74BB67', true)
+        end
     end)
 end
 
