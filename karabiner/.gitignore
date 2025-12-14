@@ -1,0 +1,5 @@
+# Auto-generated intermediate files
+wez_generated.yaml
+karabiner.yaml
+
+# Keep karabiner.json as it's the final output that Karabiner uses

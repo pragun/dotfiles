@@ -1,0 +1,86 @@
+description: Corne keyboard remapping for linux like keyboard behaviour
+manipulators:
+  - from:
+      key_code: home
+      modifiers:
+        mandatory: [ left_command ]
+        optional: [ left_shift ]
+    to:
+      - key_code: left_arrow
+        modifiers: [ fn ]
+    type: basic
+  - from:
+      key_code: end
+      modifiers:
+        mandatory: [ left_command ]
+        optional: [ left_shift ]
+    to:
+      - key_code: right_arrow
+        modifiers: [ fn ]
+    type: basic
+  - from:
+      key_code: home
+      modifiers:
+        optional: [ left_shift ]
+    to:
+      - key_code: left_arrow
+        modifiers: [ left_command ]
+    type: basic
+  - from:
+      key_code: end
+      modifiers:
+        optional: [ left_shift ]
+    to:
+      - key_code: right_arrow
+        modifiers: [ left_command ]
+    type: basic
+  - from:
+      key_code: left_arrow
+      modifiers:
+        mandatory: [ left_command ]
+        optional: [ left_shift ]
+    to:
+      - key_code: left_arrow
+        modifiers: [ left_option ]
+    type: basic
+  - from:
+      key_code: right_arrow
+      modifiers:
+        mandatory: [ left_command ]
+        optional: [ left_shift ]
+    to:
+      - key_code: right_arrow
+        modifiers: [ left_option ]
+    type: basic
+  - from:
+      key_code: tab
+      modifiers:
+        mandatory: [ left_command ]
+    to:
+      - key_code: right_arrow
+        modifiers: [ left_command, left_option ]
+    type: basic
+  - from:
+      key_code: tab
+      modifiers:
+        mandatory: [ left_command, left_shift ]
+    to:
+      - key_code: left_arrow
+        modifiers: [ left_command, left_option ]
+    type: basic
+  - from:
+      key_code: tab
+      modifiers:
+        mandatory: [ left_alt ]
+    to:
+      - key_code: tab
+        modifiers: [ left_command ]
+    type: basic
+  - from:
+      key_code: tab
+      modifiers:
+        mandatory: [ left_alt, left_shift ]
+    to:
+      - key_code: tab
+        modifiers: [ left_command, left_shift ]
+    type: basic

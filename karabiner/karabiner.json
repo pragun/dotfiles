@@ -219,7 +219,7 @@
             ]
           },
           {
-            "description": "Mappings for Wezterm - cmd to ctrl but preserve cmd+space",
+            "description": "Mappings for Wezterm - cmd to ctrl for whitelisted keys, passthrough for others",
             "manipulators": [
               {
                 "conditions": [
@@ -283,6 +283,102 @@
                     "key_code": "c",
                     "modifiers": [
                       "left_control"
+                    ]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.github\\.wez\\.wezterm$"
+                    ],
+                    "type": "frontmost_application_if"
+                  },
+                  {
+                    "name": "wez_cmd",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "spacebar",
+                  "modifiers": {
+                    "optional": [
+                      "any"
+                    ]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "spacebar",
+                    "modifiers": [
+                      "left_command"
+                    ]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.github\\.wez\\.wezterm$"
+                    ],
+                    "type": "frontmost_application_if"
+                  },
+                  {
+                    "name": "wez_cmd",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "optional": [
+                      "any"
+                    ]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": [
+                      "left_command"
+                    ]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.github\\.wez\\.wezterm$"
+                    ],
+                    "type": "frontmost_application_if"
+                  },
+                  {
+                    "name": "wez_cmd",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "grave_accent_and_tilde",
+                  "modifiers": {
+                    "optional": [
+                      "any"
+                    ]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "grave_accent_and_tilde",
+                    "modifiers": [
+                      "left_command"
                     ]
                   }
                 ],

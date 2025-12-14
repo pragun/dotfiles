@@ -1,0 +1,21 @@
+global:
+  unsafe_ui: true
+profiles:
+  - name: Default profile
+    selected: true
+    virtual_hid_keyboard:
+      keyboard_type_v2: ansi
+    devices:
+      - identifiers:
+          is_keyboard: true
+          is_pointing_device: true
+          product_id: 16388
+          vendor_id: 51966
+        ignore: false
+      - identifiers:
+          is_keyboard: true
+          product_id: 50475
+          vendor_id: 1133
+        ignore: true
+    complex_modifications:
+      rules: []

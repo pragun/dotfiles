@@ -1,0 +1,30 @@
+wezterm_ctrl_keys:
+  - c
+
+wezterm_cmd_keys:
+  - spacebar
+  - tab
+  - grave_accent_and_tilde
+
+wezterm_rule_template:
+  description: "Mappings for Wezterm - cmd to ctrl for whitelisted keys, passthrough for others"
+  manipulators:
+    - conditions:
+        - bundle_identifiers: ["^com\\.github\\.wez\\.wezterm$"]
+          type: frontmost_application_if
+      from:
+        key_code: left_command
+        modifiers:
+          optional: [any]
+      to:
+        - set_variable:
+            name: wez_cmd
+            value: 1
+      to_after_key_up:
+        - set_variable:
+            name: wez_cmd
+            value: 0
+      type: basic
+
+
+
