@@ -1,10 +1,35 @@
 wezterm_ctrl_keys:
   - c
+  - v
+  - x
+  - z
+  - a
+  - s
+  - q
+  - w
+  - b
+  - t
+  - f
+  - r
+  - n
+  - p
+  - left_arrow
+  - right_arrow
+  - up_arrow
+  - down_arrow
+  - page_up
+  - page_down
+  - home
+  - end
+  - delete_or_backspace
+  - return_or_enter
+  - escape
+  - tab
+  - grave_accent_and_tilde
 
 wezterm_cmd_keys:
   - spacebar
-  - tab
-  - grave_accent_and_tilde
+  - e
 
 wezterm_rule_template:
   description: "Mappings for Wezterm - cmd to ctrl for whitelisted keys, passthrough for others"
