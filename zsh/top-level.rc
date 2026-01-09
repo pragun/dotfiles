@@ -24,6 +24,7 @@ source $SCRIPT_DIR/other-aliases.rc
 # export PATH=$PATH:/usr/local/share/dotnet:~/.dotnet/tools:~/.local/bin
 
 export PATH=$PATH:/opt/homebrew/opt/libpq/bin
+export PATH=$PATH:/Applications/Wezterm.app/Contents/MacOS
 
 FZF_ALT_C_COMMAND=
 FZF_CTRL_T_COMMAND=

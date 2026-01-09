@@ -1,7 +1,23 @@
-alias edit-dotfiles='zed $DOTFILES'
 alias yz='yazi'
 alias lt='tree -C'
 
-function brg {
-    br --conf ~/.config/broot/git-diff-conf.toml --git-status
+# Directory navigation + code opening aliases
+# dc <dir> - cd to dir and open vscode
+dc() {
+    cd "$1" && code .
+}
+
+# dcn <dir> - open new wezterm tab, cd to dir, open vscode
+dcn() {
+    wezterm cli spawn --cwd "$1" -- zsh -c "cd '$1' && code . && exec zsh"
+}
+
+# dcng <dir> - same as dcn but also run lazygit
+dcng() {
+    wezterm cli spawn --cwd "$1" -- zsh -c "cd '$1' && code . && lazygit; exec zsh"
+}
+
+# dcg <dir> - cd to dir, open vscode, and run lazygit (no new tab)
+dcg() {
+    cd "$1" && code . && lg
 }
