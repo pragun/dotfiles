@@ -74,6 +74,13 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
+# Custom prompt with user@host
+PROMPT='%F{cyan}%n@%m%f %F{blue}%~%f$(git_prompt_info) %F{green}➜%f '
+ZSH_THEME_GIT_PROMPT_PREFIX=" %F{yellow}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%f"
+ZSH_THEME_GIT_PROMPT_DIRTY="%F{red}*%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
