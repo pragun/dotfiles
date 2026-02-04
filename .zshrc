@@ -1,4 +1,7 @@
 #!/bin/zsh
+export TERM=xterm-256color
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 export DOTFILES=$HOME/src/dotfiles
 ZSH_INIT_PATH=$DOTFILES/zsh
