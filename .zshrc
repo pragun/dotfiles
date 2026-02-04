@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-export DOTFILES=$HOME/Projects/dotfiles
+export DOTFILES=$HOME/src/dotfiles
 ZSH_INIT_PATH=$DOTFILES/zsh
 
 # find source path for symlink ~/.zshrc if it exists
