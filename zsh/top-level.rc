@@ -27,6 +27,7 @@ export PATH=$PATH:/opt/homebrew/opt/libpq/bin
 export PATH=$PATH:/Applications/Wezterm.app/Contents/MacOS
 export PATH=/opt/homebrew/opt/util-linux/bin:$PATH
 export PATH=/opt/homebrew/opt/util-linux/sbin:$PATH
+export PATH=$PATH:$HOME/.local/bin
 
 FZF_ALT_C_COMMAND=
 FZF_CTRL_T_COMMAND=
