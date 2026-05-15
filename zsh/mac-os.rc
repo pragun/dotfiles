@@ -1,0 +1,11 @@
+#!/bin/zsh
+# macOS-specific shell config. Sourced from top-level.rc when $OSTYPE == darwin*.
+
+# Brew-installed kegs not auto-linked into the main bin. Prepend so they win
+# over the macOS-shipped BSD versions of the same tools.
+[[ -d /opt/homebrew/opt/util-linux/bin ]]  && export PATH="/opt/homebrew/opt/util-linux/bin:$PATH"
+[[ -d /opt/homebrew/opt/util-linux/sbin ]] && export PATH="/opt/homebrew/opt/util-linux/sbin:$PATH"
+[[ -d /opt/homebrew/opt/libpq/bin ]]       && export PATH="$PATH:/opt/homebrew/opt/libpq/bin"
+
+# WezTerm CLI (mac app bundle)
+[[ -d /Applications/Wezterm.app/Contents/MacOS ]] && export PATH="$PATH:/Applications/Wezterm.app/Contents/MacOS"

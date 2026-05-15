@@ -11,11 +11,6 @@ if [[ -L $HOME/.zshrc ]]; then
     ZSH_INIT_PATH=$(dirname $(readlink $HOME/.zshrc))
 fi
 
-# Linuxbrew (no-op on macOS / non-linuxbrew machines)
-if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
-fi
-
 source $ZSH_INIT_PATH/zsh/top-level.rc
 export PATH="/opt/homebrew/anaconda3/bin:$PATH"
 

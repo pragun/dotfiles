@@ -1,0 +1,4 @@
+#!/bin/zsh
+# Linux-specific shell config. Sourced from top-level.rc when $OSTYPE == linux*.
+
+# (Add linux-only PATH entries, aliases, env vars here as the need arises.)

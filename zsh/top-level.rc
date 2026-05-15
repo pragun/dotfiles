@@ -3,19 +3,34 @@
 readonly SCRIPT_DIR=$(dirname $(readlink $HOME/.zshrc))/zsh
 echo $SCRIPT_DIR
 
+# --- 1. PATH first, so everything downstream sees a complete environment ---
+
+# Cross-OS PATH additions. OS-specific entries live in mac-os.rc / linux.rc.
+[[ -d $HOME/.local/bin ]] && export PATH="$PATH:$HOME/.local/bin"  # XDG-standard user bin
+[[ -d $HOME/go/bin ]]     && export PATH="$PATH:$HOME/go/bin"      # `go install` output
+
+# OS-specific config (PATH + env that varies by OS)
+case "$OSTYPE" in
+  darwin*) source $SCRIPT_DIR/mac-os.rc ;;
+  linux*)  source $SCRIPT_DIR/linux.rc ;;
+esac
+
+# Per-host overrides. $HOST is zsh's built-in short hostname.
+case "$HOST" in
+  # example:
+  # blue-heron)      export FOO=bar ;;
+  # framework-linux) alias open='xdg-open' ;;
+  *) ;;
+esac
+
+# --- 2. Framework init that wants a complete PATH ---
 source $SCRIPT_DIR/oh-my-zsh.rc
+
+# --- 3. Aliases (pure string defs, order-independent) ---
 source $SCRIPT_DIR/git-aliases.rc
 source $SCRIPT_DIR/docker-aliases.rc
 source $SCRIPT_DIR/podman-aliases.rc
 source $SCRIPT_DIR/other-aliases.rc
-
-export PATH=$PATH:/usr/local/go/bin
-export PATH=$PATH:$HOME/local/bin
-export PATH=$PATH:/opt/homebrew/opt/libpq/bin
-export PATH=$PATH:/Applications/Wezterm.app/Contents/MacOS
-export PATH=/opt/homebrew/opt/util-linux/bin:$PATH
-export PATH=/opt/homebrew/opt/util-linux/sbin:$PATH
-export PATH=$PATH:$HOME/.local/bin
 
 FZF_ALT_C_COMMAND=
 FZF_CTRL_T_COMMAND=
