@@ -27,7 +27,7 @@ case "$OSTYPE" in
             sudo apt install -y wezterm
         fi
     elif command -v dnf &> /dev/null; then
-        sudo dnf install -y zsh curl git @development-tools procps-ng file
+        sudo dnf install -y zsh curl git gcc make file procps-ng
         if ! command -v wezterm &> /dev/null; then
             sudo dnf copr enable -y wezfurlong/wezterm-nightly
             sudo dnf install -y wezterm
