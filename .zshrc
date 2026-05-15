@@ -11,6 +11,9 @@ if [[ -L $HOME/.zshrc ]]; then
     ZSH_INIT_PATH=$(dirname $(readlink $HOME/.zshrc))
 fi
 
+# Source .zprofile in non-login shells (most linux terminal emulators)
+[[ -o login ]] || [[ ! -f $HOME/.zprofile ]] || source $HOME/.zprofile
+
 source $ZSH_INIT_PATH/zsh/top-level.rc
 export PATH="/opt/homebrew/anaconda3/bin:$PATH"
 
