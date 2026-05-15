@@ -27,9 +27,17 @@ case "$OSTYPE" in
             sudo apt install -y wezterm
         fi
     elif command -v dnf &> /dev/null; then
-        sudo dnf install -y zsh curl git gcc make file procps-ng
+        sudo dnf install -y zsh curl git gcc make file procps-ng dnf-plugins-core
         if ! command -v wezterm &> /dev/null; then
-            sudo dnf copr enable -y wezfurlong/wezterm-nightly
+            # COPR target repo name differs by distro. Fedora's autodetect works;
+            # Rocky/RHEL/Alma get autodetected as epel-9 which the wezterm COPR
+            # doesn't publish to — force rhel-9 instead.
+            . /etc/os-release
+            case "$ID" in
+                rocky|rhel|almalinux) copr_repo="rhel-${VERSION_ID%%.*}-$(uname -m)" ;;
+                *)                    copr_repo="" ;;
+            esac
+            sudo dnf copr enable -y wezfurlong/wezterm-nightly $copr_repo
             sudo dnf install -y wezterm
         fi
     else
