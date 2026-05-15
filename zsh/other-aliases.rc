@@ -1,3 +1,12 @@
+# ls — color flag differs between BSD (mac) and GNU (linux)
+case "$OSTYPE" in
+  darwin*) alias ls='ls -G' ;;
+  linux*)  alias ls='ls --color=auto' ;;
+esac
+alias ll='ls -lh'      # long, human-readable sizes
+alias la='ls -lAh'     # long, all (incl. dotfiles), human
+alias lr='ls -lhtr'    # sorted by mtime, newest at bottom (good for terminals)
+
 alias yz='yazi'
 alias lt='tree -C'
 
