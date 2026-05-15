@@ -6,6 +6,7 @@ echo $SCRIPT_DIR
 source $SCRIPT_DIR/oh-my-zsh.rc
 source $SCRIPT_DIR/git-aliases.rc
 source $SCRIPT_DIR/docker-aliases.rc
+source $SCRIPT_DIR/podman-aliases.rc
 source $SCRIPT_DIR/other-aliases.rc
 
 export PATH=$PATH:/usr/local/go/bin

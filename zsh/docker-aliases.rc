@@ -1,8 +1,4 @@
 
-function dkka {
-  docker kill $(docker ps | grep -v CONTAINER | awk '{print $1}')
-}
-
 function dkps {
   docker ps
 }

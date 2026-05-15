@@ -1,4 +1,3 @@
-
 alias ga='git add'
 alias gd='git diff'
 alias gdt='git difftool -d'
@@ -10,8 +9,10 @@ alias gup='git pull'
 alias gpu='git push'
 alias gups='git push --set-upstream origin $(git_current_branch)'
 alias gmrg='git merge'
-alias grbs='git rebase'
-alias gcpk='git cherry-pick'
+
+# alias grbs='git rebase'
+# alias gcpk='git cherry-pick'
+
 alias lg='lazygit'
 alias gcp='git checkout -'
 alias gcl='git clone'

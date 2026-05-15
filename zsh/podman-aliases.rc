@@ -1,0 +1,44 @@
+
+# podman-compose — the 99%
+alias pcu='podman-compose up -d'
+alias pcd='podman-compose down'
+alias pcl='podman-compose logs -f'
+alias pcr='podman-compose restart'
+alias pcb='podman-compose build'
+alias pcp='podman-compose ps'
+
+# the few raw-podman ones worth having
+alias pps='podman ps'
+alias ppa='podman ps -a'
+alias plg='podman logs -f'
+alias pxc='podman exec -it'   # `pex` collides with Python PEX tool
+
+# fzf helpers
+function plgf {
+  # fzf-select a container, tail its logs
+  local cid=$(podman ps -a | grep -v CONTAINER | fzf --height 20 | awk '{print $1}')
+  [[ -n "$cid" ]] && podman logs -f "$cid"
+}
+
+function pxcf {
+  # fzf-select a running container, then exec a shell in it
+  local cid=$(podman ps | grep -v CONTAINER | fzf --height 20 | awk '{print $1}')
+  [[ -n "$cid" ]] && podman exec -it "$cid" "${1:-sh}"
+}
+
+function pkk {
+  # fzf-pick container(s) to kill
+  podman kill $(podman ps | grep -v CONTAINER | fzf --height 20 -m | awk '{print $1}')
+}
+
+alias lzd='lazydocker'
+
+function lzp {
+  # lazydocker against the podman socket
+  local sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)
+  if [[ -z "$sock" ]]; then
+    echo "podman machine not running — run 'podman machine start' first" >&2
+    return 1
+  fi
+  DOCKER_HOST="unix://$sock" lazydocker
+}
