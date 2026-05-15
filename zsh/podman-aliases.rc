@@ -15,9 +15,15 @@ alias lzd='lazydocker'
 
 function lzp {
   # lazydocker against the podman socket
-  local sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)
-  if [[ -z "$sock" ]]; then
-    echo "podman machine not running — run 'podman machine start' first" >&2
+  local sock
+  case "$OSTYPE" in
+    darwin*) sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null) ;;
+    linux*)  sock="${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock" ;;
+  esac
+  if [[ ! -S "$sock" ]]; then
+    echo "podman socket not found at: $sock" >&2
+    echo "  mac:   podman machine start" >&2
+    echo "  linux: systemctl --user enable --now podman.socket" >&2
     return 1
   fi
   DOCKER_HOST="unix://$sock" lazydocker
