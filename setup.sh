@@ -4,6 +4,44 @@
 
 set -euo pipefail
 
+# The manual steps this script does NOT do for you. Printed on completion, and
+# on --help so you can look them up again without re-running the install.
+next_steps() {
+    cat <<'EOF'
+Next steps (this script does not do these for you):
+
+  ln -sf "$PWD/.zshrc"    ~/.zshrc
+  ln -sf "$PWD/.zprofile" ~/.zprofile
+
+  Start a new shell (Linux: log out and back in for zsh as login shell).
+
+Both symlinks matter. ~/.zprofile is where brew's shellenv is eval'd, so
+without it brew, atuin, fzf and lazygit stay off your PATH even though they
+are installed.
+EOF
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./setup.sh [--help]
+
+Installs the dependencies for this dotfiles repo: zsh, wezterm, Oh My Zsh, and
+the brew CLI tools (fzf, atuin, yazi, lazygit, lazydocker). Idempotent — safe
+to re-run.
+
+  -h, --help   Show this message and the post-install steps, then exit without
+               changing anything.
+
+EOF
+    next_steps
+}
+
+case "${1-}" in
+    -h|--help) usage; exit 0 ;;
+    "")        ;;
+    *)         echo "Unknown argument: $1" >&2; echo >&2; usage >&2; exit 1 ;;
+esac
+
 case "$OSTYPE" in
   darwin*)
     # macOS: brew handles everything including the wezterm cask.
@@ -70,10 +108,7 @@ if [[ "$OSTYPE" == linux* ]] && [ "$SHELL" != "$(which zsh)" ]; then
     chsh -s "$(which zsh)"
 fi
 
-cat <<EOF
-
-Done. Next steps:
-  ln -sf "\$PWD/.zshrc"    ~/.zshrc
-  ln -sf "\$PWD/.zprofile" ~/.zprofile
-  Start a new shell (Linux: log out and back in for zsh as login shell).
-EOF
+echo
+echo "Done."
+echo
+next_steps
