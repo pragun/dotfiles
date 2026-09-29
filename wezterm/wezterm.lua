@@ -11,6 +11,44 @@ wezterm.on('update-right-status', function(window, pane)
   window:set_right_status(name or '')
 end)
 
+-- Pick another window (labelled by its tab titles) and move the current pane there as a new tab
+local move_tab_to_window = wezterm.action_callback(function(window, pane)
+  local choices = {}
+  for _, w in ipairs(wezterm.mux.all_windows()) do
+    if w:window_id() ~= window:window_id() then
+      local titles = {}
+      for _, t in ipairs(w:tabs()) do
+        local title = t:get_title()
+        if title == '' then title = t:active_pane():get_title() end
+        table.insert(titles, title)
+      end
+      table.insert(choices, {
+        id = tostring(w:window_id()),
+        label = string.format('[%d tab%s] %s', #titles, #titles == 1 and '' or 's', table.concat(titles, ' · ')),
+      })
+    end
+  end
+
+  if #choices == 0 then
+    pane:move_to_new_window()
+    return
+  end
+
+  window:perform_action(act.InputSelector {
+    title = 'Move tab to window',
+    fuzzy = true,
+    choices = choices,
+    action = wezterm.action_callback(function(_, inner_pane, id)
+      if id then
+        wezterm.run_child_process {
+          wezterm.executable_dir .. '/wezterm', 'cli', 'move-pane-to-new-tab',
+          '--pane-id', tostring(inner_pane:pane_id()), '--window-id', id,
+        }
+      end
+    end),
+  }, pane)
+end)
+
 config.color_scheme = "Catppuccin Frappe"
 config.font = wezterm.font("Fira Code")
 config.font_size = 15
@@ -155,6 +193,8 @@ config.key_tables = {
     { key = 't', action = act.SpawnTab 'CurrentPaneDomain' },
     { key = 's', action = act.ShowTabNavigator },
     { key = 'n', action = act.SpawnWindow },
+    { key = 'b', action = wezterm.action_callback(function(_, pane) pane:move_to_new_window() end) },
+    { key = 'm', action = move_tab_to_window },
     { key = 'q', action = act.CloseCurrentTab { confirm = true }, },
 
     { key = '1', action= act.ActivateTab(0) },
@@ -197,5 +237,26 @@ wezterm.on('augment-command-palette', function(window, pane)
   }
 end)
 
+config.ssh_domains = {
+  {
+    name = "image-server",
+    remote_address = "image-server",
+    username = "adx",
+    remote_wezterm_path = "/opt/homebrew/bin/wezterm",
+  },
+  {
+    name = "theserver",
+    remote_address = "theserver",
+    username = "adx",
+    remote_wezterm_path = "/bin/wezterm",
+  },
+  {
+    name = "tape-driver",
+    remote_address = "tape-driver",
+    username = "adx",
+    remote_wezterm_path = "/bin/wezterm",
+  },
+  
+}
 
 return config
