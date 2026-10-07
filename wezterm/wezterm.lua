@@ -11,8 +11,8 @@ wezterm.on('update-right-status', function(window, pane)
   window:set_right_status(name or '')
 end)
 
--- Pick another window (labelled by its tab titles) and move the current pane there as a new tab
-local move_tab_to_window = wezterm.action_callback(function(window, pane)
+-- InputSelector choices for every window other than the current one, labelled by its tab titles
+local function other_window_choices(window)
   local choices = {}
   for _, w in ipairs(wezterm.mux.all_windows()) do
     if w:window_id() ~= window:window_id() then
@@ -28,7 +28,12 @@ local move_tab_to_window = wezterm.action_callback(function(window, pane)
       })
     end
   end
+  return choices
+end
 
+-- Pick another window and move the current pane there as a new tab
+local move_tab_to_window = wezterm.action_callback(function(window, pane)
+  local choices = other_window_choices(window)
   if #choices == 0 then
     pane:move_to_new_window()
     return
@@ -45,6 +50,24 @@ local move_tab_to_window = wezterm.action_callback(function(window, pane)
           '--pane-id', tostring(inner_pane:pane_id()), '--window-id', id,
         }
       end
+    end),
+  }, pane)
+end)
+
+-- Pick another window and focus it
+local switch_to_window = wezterm.action_callback(function(window, pane)
+  local choices = other_window_choices(window)
+  if #choices == 0 then return end
+
+  window:perform_action(act.InputSelector {
+    title = 'Switch to window',
+    fuzzy = true,
+    choices = choices,
+    action = wezterm.action_callback(function(_, _, id)
+      if not id then return end
+      local target = wezterm.mux.get_window(tonumber(id))
+      local gui = target and target:gui_window()
+      if gui then gui:focus() end
     end),
   }, pane)
 end)
@@ -195,6 +218,7 @@ config.key_tables = {
     { key = 'n', action = act.SpawnWindow },
     { key = 'b', action = wezterm.action_callback(function(_, pane) pane:move_to_new_window() end) },
     { key = 'm', action = move_tab_to_window },
+    { key = 'w', action = switch_to_window },
     { key = 'q', action = act.CloseCurrentTab { confirm = true }, },
 
     { key = '1', action= act.ActivateTab(0) },
