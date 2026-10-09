@@ -72,6 +72,37 @@ local switch_to_window = wezterm.action_callback(function(window, pane)
   }, pane)
 end)
 
+-- Bindings that carry a `desc`, collected for the shortcut picker
+local shortcuts = {}
+
+-- Record each described binding under its key prefix, then drop `desc` so wezterm doesn't see an unknown field
+local function described(prefix, bindings)
+  for _, b in ipairs(bindings) do
+    if b.desc then
+      table.insert(shortcuts, { label = string.format('%-9s %s', prefix .. ' ' .. b.key, b.desc), action = b.action })
+      b.desc = nil
+    end
+  end
+  return bindings
+end
+
+-- Fuzzy-search the described bindings and run the one picked
+local show_shortcuts = wezterm.action_callback(function(window, pane)
+  local choices = {}
+  for i, s in ipairs(shortcuts) do
+    choices[i] = { id = tostring(i), label = s.label }
+  end
+
+  window:perform_action(act.InputSelector {
+    title = 'Shortcuts',
+    fuzzy = true,
+    choices = choices,
+    action = wezterm.action_callback(function(inner_window, inner_pane, id)
+      if id then inner_window:perform_action(shortcuts[tonumber(id)].action, inner_pane) end
+    end),
+  }, pane)
+end)
+
 config.color_scheme = "Catppuccin Frappe"
 config.font = wezterm.font("Fira Code")
 config.font_size = 15
@@ -155,7 +186,7 @@ config.keys = {
   {
     key = '/',
     mods = 'LEADER',
-    action = act.ActivateCommandPalette,
+    action = show_shortcuts,
   }
 
 }
@@ -167,59 +198,59 @@ config.key_tables = {
   -- to define a key assignment for getting out of this mode.
   -- 'resize_pane' here corresponds to the name="resize_pane" in
   -- the key assignments above.
-  move_panes = {
-    { key = 'l', action = act.AdjustPaneSize { 'Right', 1 } },
-    { key = 'h', action = act.AdjustPaneSize { 'Left', 1 } },
-    { key = 'k', action = act.AdjustPaneSize { 'Up', 1 } },
-    { key = 'j', action = act.AdjustPaneSize { 'Down', 1 } },
+  move_panes = described('C-b p', {
+    { key = 'l', desc = 'Resize pane right', action = act.AdjustPaneSize { 'Right', 1 } },
+    { key = 'h', desc = 'Resize pane left', action = act.AdjustPaneSize { 'Left', 1 } },
+    { key = 'k', desc = 'Resize pane up', action = act.AdjustPaneSize { 'Up', 1 } },
+    { key = 'j', desc = 'Resize pane down', action = act.AdjustPaneSize { 'Down', 1 } },
 
-    { key = 'y', action = act.ActivatePaneDirection 'Left' },
-    { key = 'u', action = act.ActivatePaneDirection 'Down' },
-    { key = 'i', action = act.ActivatePaneDirection 'Up' },
-    { key = 'o', action = act.ActivatePaneDirection 'Right' },
+    { key = 'y', desc = 'Focus pane left', action = act.ActivatePaneDirection 'Left' },
+    { key = 'u', desc = 'Focus pane below', action = act.ActivatePaneDirection 'Down' },
+    { key = 'i', desc = 'Focus pane above', action = act.ActivatePaneDirection 'Up' },
+    { key = 'o', desc = 'Focus pane right', action = act.ActivatePaneDirection 'Right' },
 
     -- Cancel the mode by pressing escape
     { key = 'Escape', action = 'PopKeyTable' },
-  },
+  }),
 
-  splits = {
-    { key = 'h', action = act.SplitPane { direction = 'Left', size = { Percent = 50 }, }, },
-    { key = 'l', action = act.SplitPane { direction = 'Right', size = { Percent = 50 }, }, },
-    { key = 'k', action = act.SplitPane { direction = 'Up', size = { Percent = 50 }, }, },
-    { key = 'j', action = act.SplitPane { direction = 'Down', size = { Percent = 50 }, }, },
+  splits = described('C-b s', {
+    { key = 'h', desc = 'Split pane left', action = act.SplitPane { direction = 'Left', size = { Percent = 50 }, }, },
+    { key = 'l', desc = 'Split pane right', action = act.SplitPane { direction = 'Right', size = { Percent = 50 }, }, },
+    { key = 'k', desc = 'Split pane up', action = act.SplitPane { direction = 'Up', size = { Percent = 50 }, }, },
+    { key = 'j', desc = 'Split pane down', action = act.SplitPane { direction = 'Down', size = { Percent = 50 }, }, },
 
     --{ key = 'y', action = act.ActivatePaneDirection 'Left' },
     --{ key = 'u', action = act.ActivatePaneDirection 'Down' },
     --{ key = 'i', action = act.ActivatePaneDirection 'Up' },
     --{ key = 'o', action = act.ActivatePaneDirection 'Right' },
     --
-    { key = 's', action = act.PaneSelect { mode = "Activate" }, },
-    { key = 'y', action = act.PaneSelect { mode = "SwapWithActiveKeepFocus" }, },
-    { key = 'u', action = act.PaneSelect { mode = "SwapWithActive" }, },
-    { key = 'o', action = act.PaneSelect { mode = "MoveToNewTab" }, },
-    { key = 'p', action = act.PaneSelect { mode = "MoveToNewWindow" }, },
+    { key = 's', desc = 'Pick a pane to focus', action = act.PaneSelect { mode = "Activate" }, },
+    { key = 'y', desc = 'Pick a pane to swap with (keep focus)', action = act.PaneSelect { mode = "SwapWithActiveKeepFocus" }, },
+    { key = 'u', desc = 'Pick a pane to swap with', action = act.PaneSelect { mode = "SwapWithActive" }, },
+    { key = 'o', desc = 'Pick a pane to move to a new tab', action = act.PaneSelect { mode = "MoveToNewTab" }, },
+    { key = 'p', desc = 'Pick a pane to move to a new window', action = act.PaneSelect { mode = "MoveToNewWindow" }, },
 
-    { key = 'q', action = act.CloseCurrentPane { confirm = true }, },
+    { key = 'q', desc = 'Close pane', action = act.CloseCurrentPane { confirm = true }, },
 
     { key = 'Escape', action = 'PopKeyTable' },
-  },
+  }),
 
-  tabs = {
-    { key = 'h', action = act.ActivateTabRelative(-2) },
-    { key = 'l', action = act.ActivateTabRelative(2) },
-    { key = 'j', action = act.ActivateTabRelative(-1) },
-    { key = 'k', action = act.ActivateTabRelative(1) },
-    { key = 'y', action = act.MoveTabRelative(-2) },
-    { key = 'u', action = act.MoveTabRelative(-1) },
-    { key = 'i', action = act.MoveTabRelative(1) },
-    { key = 'o', action = act.MoveTabRelative(2) },
-    { key = 't', action = act.SpawnTab 'CurrentPaneDomain' },
-    { key = 's', action = act.ShowTabNavigator },
-    { key = 'n', action = act.SpawnWindow },
-    { key = 'b', action = wezterm.action_callback(function(_, pane) pane:move_to_new_window() end) },
-    { key = 'm', action = move_tab_to_window },
-    { key = 'w', action = switch_to_window },
-    { key = 'q', action = act.CloseCurrentTab { confirm = true }, },
+  tabs = described('C-b t', {
+    { key = 'h', desc = 'Go 2 tabs left', action = act.ActivateTabRelative(-2) },
+    { key = 'l', desc = 'Go 2 tabs right', action = act.ActivateTabRelative(2) },
+    { key = 'j', desc = 'Previous tab', action = act.ActivateTabRelative(-1) },
+    { key = 'k', desc = 'Next tab', action = act.ActivateTabRelative(1) },
+    { key = 'y', desc = 'Move tab 2 left', action = act.MoveTabRelative(-2) },
+    { key = 'u', desc = 'Move tab left', action = act.MoveTabRelative(-1) },
+    { key = 'i', desc = 'Move tab right', action = act.MoveTabRelative(1) },
+    { key = 'o', desc = 'Move tab 2 right', action = act.MoveTabRelative(2) },
+    { key = 't', desc = 'New tab', action = act.SpawnTab 'CurrentPaneDomain' },
+    { key = 's', desc = 'Tab navigator', action = act.ShowTabNavigator },
+    { key = 'n', desc = 'New window', action = act.SpawnWindow },
+    { key = 'b', desc = 'Move pane to a new window', action = wezterm.action_callback(function(_, pane) pane:move_to_new_window() end) },
+    { key = 'm', desc = 'Move tab to another window', action = move_tab_to_window },
+    { key = 'w', desc = 'Switch to another window', action = switch_to_window },
+    { key = 'q', desc = 'Close tab', action = act.CloseCurrentTab { confirm = true }, },
 
     { key = '1', action= act.ActivateTab(0) },
     { key = '2', action= act.ActivateTab(1) },
@@ -232,7 +263,7 @@ config.key_tables = {
     { key = '9', action= act.ActivateTab(8) },
 
     { key = 'Escape', action = 'PopKeyTable' },
-  }
+  }),
 
 }
 
