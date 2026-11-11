@@ -28,6 +28,10 @@ windowMode.setup(spoon.ModalMgr, leftHandWindowKeybindings)
 
 spoon.ModalMgr.supervisor:enter()
 
+-- Wez Deck panel (Option+W). Loaded with pcall so a problem there can never break the rest of this config.
+local deckOk, deckErr = pcall(require, "deck")
+if not deckOk then hs.alert.show("deck failed: " .. tostring(deckErr)) end
+
 -- Fusion 360 helper hotkey
 hs.hotkey.bind({ "cmd", "ctrl" }, "L", function()
     local win = hs.window.frontmostWindow()

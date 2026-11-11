@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wez Deck</title>
+<style>
+/* Layout: one scrolling tree under a thin chord bar. Projects are bands; managers and work are rows. */
+:root {
+  --bg:#f4f6f6; --panel:#ffffff; --ink:#14201f; --dim:#667876; --line:#d9e1e0; --sel:#dff0f1;
+  --accent:#0b6e75; --work:#2d6cdf; --idle:#2f7d4e; --warn:#b3261e; --need:#b8610a;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace; --sans:-apple-system,"SF Pro Text",system-ui,sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg:#0c1213; --panel:#111a1b; --ink:#dfeceb; --dim:#8da3a0; --line:#223031; --sel:#173a3e;
+  --accent:#62c9d1; --work:#7ea6ff; --idle:#62c48c; --warn:#ff8f85; --need:#f3a653; } }
+* { box-sizing:border-box; }
+html, body { height:100%; margin:0; }
+body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); display:flex; flex-direction:column; overflow:hidden; user-select:none; }
+.bar { padding:12px 16px 10px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:14px; background:var(--panel); }
+.brand { font:600 11px var(--mono); letter-spacing:.14em; color:var(--accent); }
+.chord { font:15px var(--mono); letter-spacing:.06em; min-width:5ch; }
+.chord .cur { display:inline-block; width:.6ch; height:1.1em; background:var(--accent); vertical-align:text-bottom; animation:blink 1.1s steps(2) infinite; }
+@keyframes blink { 50% { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .chord .cur { animation:none; } }
+.hint { color:var(--dim); font-size:12px; margin-left:auto; text-align:right; }
+.hint.err { color:var(--warn); }
+#inp { display:none; flex:1; font:14px var(--mono); background:transparent; border:0; outline:0; color:var(--ink); user-select:text; }
+.bar.typing #inp { display:block; } .bar.typing .chord { display:none; }
+#sugs { display:none; background:var(--panel); border-bottom:1px solid var(--line); padding:4px 0; }
+.sg { display:flex; gap:12px; align-items:baseline; padding:4px 16px; cursor:default; }
+.sg.on { background:var(--sel); }
+.sg.dead { color:var(--dim); }
+.sg .sl { font:600 13px var(--mono); color:var(--accent); min-width:9ch; }
+.sg .ss { color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sg .sc { color:var(--dim); font:11px var(--mono); }
+.sh { padding:4px 16px 2px; color:var(--dim); font:11px var(--mono); }
+#list { flex:1; overflow-y:auto; padding:6px 0 14px; }
+.proj { display:flex; align-items:center; gap:10px; padding:9px 16px 4px; margin-top:6px; cursor:default; }
+.proj .code { font:600 14px var(--mono); color:var(--accent); letter-spacing:.05em; }
+.proj .pname { color:var(--dim); }
+.proj .roll { margin-left:auto; display:flex; gap:10px; font:12px var(--mono); color:var(--dim); }
+.proj.armed .code { background:var(--accent); color:var(--panel); padding:0 6px; border-radius:4px; }
+.proj.sel, .row.sel { background:var(--sel); }
+.grp { display:flex; gap:8px; align-items:center; padding:5px 16px 2px 40px; color:var(--dim); font:12px var(--mono); cursor:default; }
+.grp b { color:var(--ink); font-weight:600; } .grp .ct { margin-left:auto; } .grp .caret { width:10px; }
+.grp.sel { background:var(--sel); }
+.row.ing { padding-left:62px; }
+.sect { padding:2px 16px 2px 40px; color:var(--dim); font:11px var(--mono); letter-spacing:.06em; }
+.row { display:flex; align-items:center; gap:10px; padding:3px 16px 3px 40px; cursor:default; min-height:26px; }
+.key { width:18px; height:18px; flex:none; border:1px solid var(--line); border-radius:4px; display:grid; place-items:center; font:11px var(--mono); color:var(--dim); text-transform:lowercase; }
+.armed-body .key { color:var(--accent); border-color:var(--accent); }
+.armed-body .row:not(.hasKey) .key { opacity:.35; }
+.dot { width:8px; height:8px; border-radius:50%; flex:none; }
+.dot.working { background:var(--work); animation:pulse 1.4s ease-in-out infinite; }
+.dot.idle { background:var(--idle); }
+.dot.waiting { background:var(--need); box-shadow:0 0 0 3px color-mix(in srgb, var(--need) 28%, transparent); }
+.row.waitingRow .nm { font-weight:600; }
+.dot.shell { border:1.5px solid var(--dim); }
+.dot.none { border:1.5px dashed var(--line); }
+@keyframes pulse { 50% { opacity:.35; } }
+@media (prefers-reduced-motion: reduce) { .dot.working { animation:none; } }
+.nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.row.shell .nm, .row.off .nm { color:var(--dim); }
+.meta { color:var(--dim); font:11px var(--mono); flex:none; }
+.empty { padding:3px 16px 3px 40px; color:var(--dim); font-size:12px; }
+.foot { border-top:1px solid var(--line); padding:7px 16px; color:var(--dim); font:11px var(--mono); display:flex; gap:16px; flex-wrap:wrap; background:var(--panel); }
+.foot b { color:var(--ink); font-weight:600; }
+.ren { font:600 14px var(--mono); width:7ch; background:var(--panel); color:var(--ink); border:1px solid var(--accent); border-radius:4px; padding:0 4px; user-select:text; outline:0; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar">
+  <span class="brand">DECK</span>
+  <span class="chord" id="chord"></span>
+  <input id="inp" type="text" autocomplete="off" spellcheck="false" placeholder="filter by name or code">
+  <span class="hint" id="hint">type a code to jump, or any other text to search</span>
+</div>
+<div id="sugs"></div>
+<div id="list"></div>
+<div class="foot"><span><b>code</b> then <b>key</b> jumps</span><span><b>↑↓ ↵</b> move, go</span><span><b>space</b> next waiting</span><span><b>/</b> filter</span><span><b>⌥G</b> move session</span><span><b>⌥R</b> rename code</span><span><b>esc</b> close</span><span style="margin-left:auto">build 7</span></div>
+
+<script>
+(function () {
+  var model = { projects: [], unsorted: [] };
+  var buf = '', armed = null, sel = 0, filter = '', mode = '', flashTimer = null, renaming = null;
+  var collapsed = {}, waitIdx = -1, alignNext = false;
+  var DEF = 'type a code to jump, or any other text to search';
+  var assignTarget = null;
+  function dlog(m) { send({ type: 'log', msg: String(Date.now() % 1000000) + ' ' + m }); }
+  function logScroll(tag) {
+    var L = $('list'), c = document.querySelector('.sel'), lr = L.getBoundingClientRect(), cr = c ? c.getBoundingClientRect() : null;
+    dlog(tag + ' sel=' + sel + ' armed=' + (armed ? armed.code : '-') + ' mode=' + (mode || '-') + ' scrollTop=' + Math.round(L.scrollTop) + ' scrollH=' + L.scrollHeight + ' clientH=' + L.clientHeight +
+      ' innerH=' + innerHeight + ' listTop=' + Math.round(lr.top) + ' selTopInList=' + (cr ? Math.round(cr.top - lr.top) : 'n/a'));
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  function send(m) { try { window.webkit.messageHandlers.deck.postMessage(m); } catch (e) { console.log('->lua', JSON.stringify(m)); } }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function matches(item, p) {
+    if (!filter) return true;
+    var f = filter.toLowerCase();
+    var ses = item.session || {};
+    return item.name.toLowerCase().indexOf(f) !== -1 || p.code.indexOf(f) !== -1 || p.name.toLowerCase().indexOf(f) !== -1 ||
+      (ses.path || '').toLowerCase().indexOf(f) !== -1 || (ses.state || '').indexOf(f) !== -1;
+  }
+  function firstItemIdx() {
+    var i = flatSelectable().findIndex(function (r) { return r.t === 'item'; });
+    return i < 0 ? 0 : i;
+  }
+  var sugItems = [], sugIdx = 0;
+  function groupsOf(p) {
+    var seen = {};
+    p.managers.concat(p.work).forEach(function (it) { if (it.session && it.session.group) seen[it.session.group] = 1; });
+    return Object.keys(seen).sort();
+  }
+  function countOf(p) { return p.managers.filter(function (m) { return m.session; }).length + p.work.length; }
+  function buildSugs() {
+    var v = $('inp').value.trim().toLowerCase(), slash = v.indexOf('/');
+    var pq = slash === -1 ? v : v.slice(0, slash), gq = slash === -1 ? null : v.slice(slash + 1), items = [];
+    if (!v) items.push({ label: 'back to folder placement', sub: 'unpin this session', spec: '-' });
+    if (gq === null) {
+      var ps = model.projects.filter(function (p) { return !pq || p.code.indexOf(pq) === 0 || p.name.toLowerCase().indexOf(pq) !== -1; });
+      ps.sort(function (a, b) { return (b.code === pq) - (a.code === pq) || (b.code.indexOf(pq) === 0) - (a.code.indexOf(pq) === 0); });
+      ps.forEach(function (p) { items.push({ label: p.code, sub: p.name, count: countOf(p), spec: p.code, fill: p.code + '/' }); });
+    } else {
+      var p = model.projects.filter(function (x) { return x.code === pq; })[0];
+      if (!p) { items.push({ label: 'no project “' + pq + '”', sub: 'keep typing, or delete back to the code', spec: null }); }
+      else {
+        items.push({ label: p.code, sub: 'no group', count: countOf(p), spec: p.code });
+        var gs = groupsOf(p).filter(function (g) { return !gq || g.indexOf(gq) !== -1; });
+        gs.forEach(function (g) { items.push({ label: p.code + '/' + g, sub: 'existing group', spec: p.code + '/' + g }); });
+        if (gq && groupsOf(p).indexOf(gq) === -1) items.push({ label: p.code + '/' + gq, sub: 'new group', spec: p.code + '/' + gq });
+        if (gq) items.shift();
+      }
+    }
+    return items;
+  }
+  function renderSugs() {
+    sugItems = buildSugs();
+    if (sugIdx >= sugItems.length) sugIdx = 0;
+    var box = $('sugs');
+    box.innerHTML = sugItems.map(function (it, i) {
+      return '<div class="sg' + (i === sugIdx ? ' on' : '') + (it.spec ? '' : ' dead') + '" data-s="' + i + '"><span class="sl">' + esc(it.label) + '</span><span class="ss">' + esc(it.sub || '') + '</span><span class="sc">' + (it.count != null ? it.count + ' sessions' : '') + '</span></div>';
+    }).join('') + '<div class="sh">↑↓ choose · tab complete · ↵ move · esc cancel</div>';
+    box.style.display = 'block';
+  }
+  function endAssign() {
+    mode = ''; assignTarget = null; $('bar').classList.remove('typing'); $('inp').blur(); $('inp').value = '';
+    $('inp').placeholder = 'filter by name or code'; $('sugs').style.display = 'none';
+  }
+  function startRename() {
+    if (mode !== '') return;
+    var r = flatSelectable()[sel]; if (!r || r.p.code === '?') return;
+    renaming = r.p.code; mode = 'rename'; render();
+  }
+  function startMove() {
+    if (mode !== '') return;
+    var gr = flatSelectable()[sel];
+    if (!gr || gr.t !== 'item' || !gr.item.session || !gr.item.session.session_id) { flash('select a Claude session first (arrow keys), then press ⌥G', true); return; }
+    assignTarget = gr.item.session.session_id; mode = 'assign'; resetChord();
+    $('bar').classList.add('typing'); $('inp').placeholder = 'move “' + gr.item.name + '” to project or project/group';
+    $('inp').value = ''; $('inp').focus(); sugIdx = 0; renderSugs();
+  }
+  function startSearch(q) {
+    mode = 'filter'; resetChord(); filter = q;
+    $('bar').classList.add('typing'); $('inp').value = q; $('inp').focus();
+    sel = firstItemIdx(); render();
+  }
+  function rowsFor() {
+    var rows = [];
+    model.projects.forEach(function (p) {
+      var ms = p.managers.filter(function (m) { return matches(m, p); });
+      var ws = p.work.filter(function (w) { return matches(w, p); });
+      if (filter && !ms.length && !ws.length) return;
+      rows.push({ t: 'proj', p: p });
+      if (collapsed[p.code] && !filter) return;
+      if (ms.length) rows.push({ t: 'sect', label: 'managers/' });
+      ms.forEach(function (m) { rows.push({ t: 'item', p: p, item: m, mgr: true }); });
+      var byGroup = {};
+      ws.forEach(function (w) { var g = (w.session && w.session.group) || ''; (byGroup[g] = byGroup[g] || []).push(w); });
+      var named = Object.keys(byGroup).filter(Boolean).sort();
+      if (!named.length) {
+        if (ws.length) rows.push({ t: 'sect', label: 'work/' });
+        ws.forEach(function (w) { rows.push({ t: 'item', p: p, item: w }); });
+      } else {
+        named.concat(byGroup[''] ? [''] : []).forEach(function (g) {
+          rows.push({ t: 'group', p: p, g: g, n: byGroup[g].length });
+          if (filter || !collapsed[p.code + '/' + g]) byGroup[g].forEach(function (w) { rows.push({ t: 'item', p: p, item: w, grp: true }); });
+        });
+      }
+    });
+    var un = model.unsorted.filter(function (u) { return !filter || u.name.toLowerCase().indexOf(filter.toLowerCase()) !== -1; });
+    if (un.length) {
+      rows.push({ t: 'proj', p: { code: '?', name: 'unsorted', managers: [], work: [], counts: { working: 0, idle: 0 } }, fake: true });
+      un.forEach(function (u) { rows.push({ t: 'item', p: { code: '?' }, item: u }); });
+    }
+    return rows;
+  }
+  function selectable(r) { return r.t !== 'sect'; }
+
+  function render() {
+    var rows = rowsFor(), html = '';
+    if (!rows.length) html = '<div class="empty">Nothing matches. Press esc to clear the filter.</div>';
+    var si = -1;
+    rows.forEach(function (r, i) {
+      if (selectable(r)) si++;
+      var s = selectable(r) && si === sel ? ' sel' : '';
+      if (r.t === 'proj') {
+        var p = r.p, c = p.counts, isArmed = armed && armed.code === p.code;
+        if (renaming === p.code) {
+          html += '<div class="proj' + s + '" data-i="' + si + '"><input class="ren" id="ren" value="' + esc(p.code) + '" maxlength="6"><span class="pname">' + esc(p.name) + '</span></div>';
+        } else {
+          html += '<div class="proj' + (isArmed ? ' armed' : '') + s + '" data-i="' + si + '" data-code="' + esc(p.code) + '"><span class="code">' + esc(p.code) + '</span><span class="pname">' + esc(p.name) + '</span>' +
+            '<span class="roll">' + (c.waiting ? '<span style="color:var(--need);font-weight:600">' + c.waiting + ' waiting</span>' : '') + (c.working ? '<span style="color:var(--work)">' + c.working + ' working</span>' : '') + (c.idle ? '<span>' + c.idle + ' idle</span>' : '') + (collapsed[p.code] && !filter ? '<span>▸</span>' : '') + '</span></div>';
+        }
+      } else if (r.t === 'group') {
+        var shut = collapsed[r.p.code + '/' + r.g] && !filter;
+        html += '<div class="grp' + s + '" data-i="' + si + '"><span class="caret">' + (shut ? '▸' : '▾') + '</span><b>' + esc(r.g || 'ungrouped') + '/</b><span class="ct">' + r.n + (r.n === 1 ? ' session' : ' sessions') + '</span></div>';
+      } else if (r.t === 'sect') {
+        html += '<div class="sect">' + r.label + '</div>';
+      } else {
+        var it = r.item, ses = it.session, st = ses ? (ses.kind === 'shell' ? 'shell' : ses.state) : 'none';
+        var body = armed && armed.code === r.p.code ? ' armed-body' : '';
+        html += '<div class="' + (body ? 'armed-body ' : '') + 'row' + (r.grp ? ' ing' : '') + (it.key ? ' hasKey' : '') + (st === 'shell' ? ' shell' : '') + (st === 'waiting' ? ' waitingRow' : '') + (!ses ? ' off' : '') + s + '" data-i="' + si + '">' +
+          '<span class="key">' + esc(it.key || '') + '</span><span class="dot ' + st + '"></span>' +
+          '<span class="nm">' + esc(it.name) + '</span><span class="meta">' + (ses ? (ses.pinned ? 'pinned · ' : '') + 'w' + ses.window_id : 'not running') + '</span></div>';
+      }
+    });
+    $('list').innerHTML = html;
+    var cur = document.querySelector('.sel');
+    if (cur) {  // scroll by hand: arrows keep the row in view, a typed project code puts its header at the top
+      var L = $('list'), rel = cur.getBoundingClientRect().top - L.getBoundingClientRect().top + L.scrollTop;
+      if (alignNext) { L.scrollTop = Math.max(0, rel - 6); alignNext = false; }
+      else if (rel < L.scrollTop) L.scrollTop = Math.max(0, rel - 6);
+      else if (rel + cur.offsetHeight > L.scrollTop + L.clientHeight) L.scrollTop = rel + cur.offsetHeight - L.clientHeight + 6;
+    }
+    if (renaming) { var el = $('ren'); if (el) { el.focus(); el.select(); } }
+    var ch = '';
+    if (armed) ch = esc(armed.code) + ' <span style="color:var(--dim)">→</span> ' + '<span class="cur"></span>';
+    else ch = esc(buf) + '<span class="cur"></span>';
+    $('chord').innerHTML = ch;
+    logScroll('render');
+  }
+  function flash(msg, err) {
+    var h = $('hint'); h.textContent = msg || DEF; h.className = 'hint' + (err ? ' err' : '');
+    clearTimeout(flashTimer); if (msg) flashTimer = setTimeout(function () { h.textContent = DEF; h.className = 'hint'; render(); }, 2200);
+  }
+  function resetChord() { buf = ''; armed = null; }
+  function flatSelectable() { return rowsFor().filter(selectable); }
+  function jump(item) {
+    if (!item || !item.session) { flash('not running', true); return; }
+    send({ type: 'jump', pane_id: item.session.pane_id });
+  }
+
+  function onKey(e) {
+    dlog('key ' + e.key + (e.altKey ? ' +alt' : '') + ' code=' + e.code);
+    if (mode === 'rename') {
+      if (e.key === 'Enter') { var v = $('ren').value.trim().toLowerCase(); var old = renaming; mode = ''; renaming = null; send({ type: 'rename', old: old, 'new': v }); render(); }
+      else if (e.key === 'Escape') { mode = ''; renaming = null; render(); }
+      return;
+    }
+    if (mode === 'assign') {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (sugItems.length) { sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length; renderSugs(); }
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        var t = sugItems[sugIdx];
+        if (t && t.spec) { $('inp').value = t.fill || t.spec; sugIdx = 0; renderSugs(); }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        var pick = sugItems[sugIdx];
+        if (!pick || !pick.spec) { flash('pick a project from the list', true); return; }
+        var sid = assignTarget; endAssign(); send({ type: 'assign', session_id: sid, spec: pick.spec }); render();
+      } else if (e.key === 'Escape') { endAssign(); render(); }
+      return;
+    }
+    if (mode === 'filter') {
+      if (e.key === 'Escape') { mode = ''; filter = ''; $('inp').value = ''; $('bar').classList.remove('typing'); sel = 0; render(); }
+      else if (e.key === 'Enter') { e.preventDefault(); var fr = flatSelectable()[sel]; if (fr && fr.t === 'item') jump(fr.item); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(e.key === 'ArrowDown' ? 1 : -1); }
+      return;
+    }
+    var k = e.key;
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyR' || e.key === '®')) { e.preventDefault(); startRename(); return; }
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyG' || e.key === '©')) { e.preventDefault(); startMove(); return; }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (k === 'Escape') { if (armed || buf) { resetChord(); render(); } else send({ type: 'hide' }); return; }
+    if (k === 'Enter') { var row = flatSelectable()[sel]; if (row && row.t === 'item') jump(row.item); else if (row && row.t === 'proj') { collapsed[row.p.code] = !collapsed[row.p.code]; render(); } else if (row && row.t === 'group') { collapsed[row.p.code + '/' + row.g] = !collapsed[row.p.code + '/' + row.g]; render(); } return; }
+    if (k === 'ArrowDown') { e.preventDefault(); move(1); return; }
+    if (k === 'ArrowUp') { e.preventDefault(); move(-1); return; }
+    if (k === '/') { e.preventDefault(); mode = 'filter'; resetChord(); $('bar').classList.add('typing'); $('inp').focus(); render(); return; }
+    if (k === 'Backspace') { if (armed) { armed = null; buf = buf.slice(0, -1); } else buf = buf.slice(0, -1); render(); return; }
+    if (k === ' ') {
+      e.preventDefault();
+      var w = [];
+      model.projects.forEach(function (p) { p.managers.concat(p.work).forEach(function (it) { if (it.session && it.session.state === 'waiting') w.push(it); }); });
+      if (!w.length) { flash('nothing is waiting on you'); return; }
+      waitIdx = (waitIdx + 1) % w.length; jump(w[waitIdx]); return;
+    }
+    if (!/^[a-z0-9]$/i.test(k)) return;
+    e.preventDefault();  // keep the character out of the search box when a search starts from this keypress
+    k = k.toLowerCase();
+    if (armed) {
+      var hit = armed.managers.concat(armed.work).filter(function (x) { return x.key === k; })[0];
+      if (hit) { jump(hit); } else { flash('no “' + k + '” under ' + armed.code, true); resetChord(); render(); }
+      return;
+    }
+    buf += k;
+    var cands = model.projects.filter(function (p) { return p.code.indexOf(buf) === 0; });
+    if (!cands.length) { startSearch(buf); return; }  // not a project code, so treat what was typed as a search
+    var exact = cands.filter(function (p) { return p.code === buf; })[0];
+    if (exact) { armed = exact; alignNext = true; flash(''); var idx = flatSelectable().findIndex(function (r) { return r.t === 'proj' && r.p.code === exact.code; }); if (idx >= 0) sel = idx; }
+    render();
+  }
+  function move(d) { var n = flatSelectable().length; if (!n) return; sel = (sel + d + n) % n; render(); }
+
+  document.addEventListener('keydown', onKey);
+  $('inp').addEventListener('input', function () { if (mode === 'assign') { sugIdx = 0; renderSugs(); return; } filter = this.value; sel = firstItemIdx(); render(); });
+  $('sugs').addEventListener('mousedown', function (e) {
+    var r = e.target.closest('[data-s]'); if (!r) return; e.preventDefault();
+    var it = sugItems[+r.getAttribute('data-s')]; if (!it || !it.spec) return;
+    var sid = assignTarget; endAssign(); send({ type: 'assign', session_id: sid, spec: it.spec }); render();
+  });
+  $('list').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-i]'); if (!el) return;
+    sel = +el.getAttribute('data-i'); var r = flatSelectable()[sel];
+    if (r && r.t === 'item') jump(r.item);
+    else if (r && r.t === 'proj') { collapsed[r.p.code] = !collapsed[r.p.code]; render(); }
+    else if (r && r.t === 'group') { collapsed[r.p.code + '/' + r.g] = !collapsed[r.p.code + '/' + r.g]; render(); }
+  });
+
+  window.deck = {
+    open: function () { dlog('open() called'); resetChord(); filter = ''; mode = ''; renaming = null; sel = 0; $('inp').value = ''; $('bar').classList.remove('typing'); $('hint').textContent = DEF; $('hint').className = 'hint'; render(); },
+    update: function (m) { dlog('update() projects=' + m.projects.length); model = m; var n = flatSelectable().length; if (sel >= n) sel = Math.max(0, n - 1); if (armed) armed = model.projects.filter(function (p) { return p.code === armed.code; })[0] || null; render(); },
+    flash: flash,
+    startMove: startMove,
+    startRename: startRename
+  };
+  render();
+})();
+</script>
+</body>
+</html>
