@@ -1,0 +1,294 @@
+<title>Wez Deck Sidebar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: reading column with one big terminal mock in the middle; the sidebar inside the mock is the star. */
+:root {
+  --bg:#eef1f1; --surface:#fbfcfc; --ink:#13201f; --muted:#566765; --line:#d3dcdb;
+  --accent:#0b6e75; --accent-soft:#d6ecee;
+  --term-bg:#0d1415; --term-side:#101a1c; --term-bar:#162123; --term-fg:#d2dfdd; --term-dim:#7b9290; --term-line:#263537; --term-sel:#1b3a3d;
+  --t-run:#7ea6ff; --t-need:#f3a653; --t-idle:#62c48c; --t-park:#7f9290; --t-crit:#ff8f85; --t-accent:#62c9d1;
+  --f-display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a;
+  --term-bg:#070c0d; --term-side:#0a1213; --term-bar:#101a1b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a;
+  --term-bg:#070c0d; --term-side:#0a1213; --term-bar:#101a1b; color-scheme: dark; }
+
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.65;
+  padding-block:48px 96px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:60px; }
+.prose { max-width:66ch; } .prose p { margin:0 0 1em; }
+h1,h2,h3 { font-family:var(--f-display); font-weight:700; line-height:1.12; margin:0; text-wrap:balance; letter-spacing:-0.01em; }
+h1 { font-size:clamp(2.4rem, 7.5vw, 4rem); } h2 { font-size:clamp(1.6rem, 4.5vw, 2.2rem); margin-bottom:14px; } h3 { font-size:1.12rem; margin-bottom:6px; }
+.kicker { font-family:var(--f-mono); font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+.lede { font-size:1.18rem; color:var(--muted); max-width:58ch; margin-top:16px; }
+code { font-family:var(--f-mono); font-size:.86em; background:var(--accent-soft); padding:.1em .4em; border-radius:4px; }
+.leaning { border-left:3px solid var(--accent); padding:4px 0 4px 16px; margin:20px 0; max-width:66ch; }
+.leaning b:first-child { color:var(--accent); }
+.fig-cap { font-size:.85rem; color:var(--muted); margin-top:10px; max-width:72ch; }
+
+/* ---------- terminal with sidebar ---------- */
+.term { background:var(--term-bg); color:var(--term-fg); border:1px solid var(--term-line); border-radius:10px; overflow:hidden;
+  font-family:var(--f-mono); font-size:13px; line-height:1.5; box-shadow:0 18px 40px -24px rgba(0,0,0,.55); margin-top:22px; }
+.term-top { background:var(--term-bar); display:flex; align-items:center; gap:6px; padding:7px 12px; color:var(--term-dim); }
+.lights { display:flex; gap:6px; margin-right:10px; } .lights i { width:10px; height:10px; border-radius:50%; background:var(--term-line); display:block; }
+.body { display:grid; grid-template-columns:268px minmax(0,1fr); min-height:430px; }
+.side { background:var(--term-side); border-right:1px solid var(--term-line); display:flex; flex-direction:column; min-width:0; outline:0; }
+.side:focus-visible { box-shadow:inset 0 0 0 1px var(--t-accent); }
+.side-head { padding:9px 12px; border-bottom:1px solid var(--term-line); display:flex; justify-content:space-between; color:var(--term-dim); font-size:11.5px; }
+.side-head b { color:var(--t-accent); font-weight:500; }
+.tree { flex:1; padding:6px 0; overflow-y:auto; }
+.node { display:flex; align-items:center; gap:7px; padding:2px 10px; cursor:pointer; white-space:nowrap; min-width:0; border-left:2px solid transparent; }
+.node:hover { background:var(--term-sel); }
+.node.sel { background:var(--term-sel); border-left-color:var(--t-accent); }
+.node.hit .code { outline:1px solid var(--t-accent); }
+.caret { width:10px; color:var(--term-dim); flex:none; }
+.code { color:var(--t-accent); font-weight:500; letter-spacing:.04em; padding:0 3px; border-radius:3px; }
+.rname { color:var(--term-dim); overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1; }
+.roll { display:flex; gap:7px; color:var(--term-dim); font-size:11.5px; flex:none; }
+.folder { color:var(--term-dim); padding-left:24px; } .folder .caret { margin-right:-2px; }
+.leafn { padding-left:44px; }
+.key { display:inline-grid; place-items:center; width:15px; height:15px; border:1px solid var(--term-line); border-radius:3px; color:var(--term-dim); font-size:10.5px; flex:none; }
+.node.sel .key, .node.cand .key { color:var(--t-accent); border-color:var(--t-accent); }
+.lname { overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1; }
+.dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+.dot.run { background:var(--t-run); } .dot.need { background:var(--t-need); box-shadow:0 0 0 3px color-mix(in srgb, var(--t-need) 28%, transparent); }
+.dot.idle { background:var(--t-idle); } .dot.park { background:transparent; border:1.5px solid var(--t-park); }
+.mini { width:26px; height:4px; border-radius:2px; background:var(--term-line); position:relative; overflow:hidden; flex:none; }
+.mini::after { content:""; position:absolute; inset:0 auto 0 0; width:var(--w); background:var(--t-idle); }
+.mini.warn::after { background:var(--t-need); } .mini.hot::after { background:var(--t-crit); }
+.chord { border-top:1px solid var(--term-line); padding:8px 12px; color:var(--term-dim); font-size:11.5px; min-height:50px; }
+.chord b { color:var(--t-accent); font-weight:500; } .chord .buf { color:var(--term-fg); font-size:13px; letter-spacing:.08em; }
+.main { padding:14px 18px; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.main-h { color:var(--term-dim); border-bottom:1px solid var(--term-line); padding-bottom:8px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.main-h b { color:var(--term-fg); font-weight:500; }
+.out { white-space:pre-wrap; color:var(--term-fg); }
+.out .d { color:var(--term-dim); } .out .a { color:var(--t-accent); } .out .n { color:var(--t-need); }
+.term-bottom { background:var(--term-bar); border-top:1px solid var(--term-line); padding:5px 12px; display:flex; gap:18px; flex-wrap:wrap; color:var(--term-dim); }
+.term-bottom b { color:var(--term-fg); font-weight:500; }
+@media (max-width:700px) { .body { grid-template-columns:1fr; } .side { border-right:0; border-bottom:1px solid var(--term-line); } }
+
+/* ---------- generic cards / tables ---------- */
+.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:16px; margin-top:22px; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:18px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.card.pick { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.card .lbl { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+.card p { margin:0; color:var(--muted); font-size:.94rem; line-height:1.55; }
+.card ul { margin:0; padding-left:18px; font-size:.9rem; color:var(--muted); } .card li + li { margin-top:3px; }
+.tbl { overflow-x:auto; margin-top:20px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+table { border-collapse:collapse; width:100%; min-width:560px; font-size:.92rem; }
+th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:500; }
+tr:last-child td { border-bottom:0; }
+kbd { font-family:var(--f-mono); font-size:.8em; background:var(--surface); border:1px solid var(--line); border-bottom-width:2px; padding:1px 7px; border-radius:5px; white-space:nowrap; }
+pre.code { background:var(--term-bg); color:var(--term-fg); border:1px solid var(--term-line); border-radius:10px; padding:16px 18px; overflow-x:auto; font-family:var(--f-mono); font-size:12.5px; line-height:1.6; margin:20px 0 0; }
+.c-k { color:var(--t-accent); } .c-s { color:var(--t-idle); } .c-d { color:var(--term-dim); } .c-n { color:var(--t-need); }
+@media (prefers-reduced-motion: no-preference) { .node { transition:background .1s; } }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Wez Deck, revision two</div>
+  <h1>The sidebar edition</h1>
+  <p class="lede">You asked for a tree you can see all the time: repo or project at the top, managers underneath, and a short code for everything so you can jump without a mouse. Fair. A picker you open is a phone book; a sidebar is a map pinned to the wall.</p>
+</header>
+
+<section>
+  <div class="kicker">Chapter 1</div>
+  <h2>The map on the wall</h2>
+  <div class="prose">
+    <p>Every repo or project gets a three-letter code you choose by hand. Under each one sit two folders: <code>managers/</code> with a one-key shortcut per manager, and <code>work/</code> with numbered sessions. Collapsed repos show a roll-up, so a closed folder still tells you when something inside needs you.</p>
+    <p>The sidebar below is live. Click it, then try typing <code>gdt</code> and then <code>p</code>. Press <kbd>Space</kbd> to jump to the next session that needs you. Press <kbd>Esc</kbd> to clear. Clicking rows and folding folders works too.</p>
+  </div>
+
+  <div class="term" aria-label="WezTerm window with a pinned sidebar">
+    <div class="term-top"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>wezterm · workspace <b style="color:var(--term-fg);font-weight:500">gdt</b></div>
+    <div class="body">
+      <div class="side" id="side" tabindex="0" aria-label="Session tree. Type a three-letter code, then a shortcut key.">
+        <div class="side-head"><b>DECK</b><span>click, then type</span></div>
+        <div class="tree" id="tree"></div>
+        <div class="chord" id="chord"></div>
+      </div>
+      <div class="main">
+        <div class="main-h" id="main-h"></div>
+        <div class="out" id="out"></div>
+      </div>
+    </div>
+    <div class="term-bottom">
+      <span><b id="n-need">0</b> need you</span><span><b id="n-hot">0</b> near handover</span><span>press <b>Space</b> for next</span>
+    </div>
+  </div>
+  <div class="fig-cap">Example data. Codes, sessions and states are placeholders, not your real setup.</div>
+
+  <div class="leaning"><b>My leaning:</b> with this structure, tags stop being the main way to organise things. Position in the tree does that job. Keep tags as an optional second axis, reached through a <code>/</code> filter at the top of the sidebar, and don't make yourself maintain them.</div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 2</div>
+  <h2>Addresses, not searches</h2>
+  <div class="prose">
+    <p>Because you are happy to name things by hand, every session gets a short path: <code>gdt.p</code> is the pr-manager in growth-detector, <code>gdt.1</code> is its first work session. That is two or three keystrokes with no fuzzy matching to go wrong, which is what makes it feel like a cockpit instead of a search box.</p>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>You type</th><th>Where you land</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>Leader</kbd> <kbd>b</kbd></td><td>Focus the sidebar (or toggle it on and off).</td></tr>
+        <tr><td><code>gdt</code> then <code>p</code></td><td>The pr-manager under growth-detector.</td></tr>
+        <tr><td><code>gdt</code> then <code>1</code></td><td>First work session under growth-detector.</td></tr>
+        <tr><td><code>ops</code> then <code>d</code></td><td>The global prod-manager.</td></tr>
+        <tr><td><kbd>Space</kbd></td><td>Next session that needs you, oldest question first.</td></tr>
+        <tr><td><kbd>/</kbd></td><td>Filter by tag, state or name. The picker from revision one lives on here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose" style="margin-top:20px">
+    <p>One assumption I made: some managers belong to a repo (a pr-manager for each) and some cut across everything (instance and prod). I gave the cross-cutting ones their own pseudo-project, <code>ops</code>, so they sit in the same tree instead of a special case. If every manager is really global, you would have one <code>ops</code> and the per-repo <code>managers/</code> folders disappear.</p>
+  </div>
+<pre class="code"><span class="c-d">// ~/.config/wezdeck/registry.json  (the hand-assigned part)</span>
+{
+  <span class="c-k">"gdt"</span>: { <span class="c-k">"name"</span>: <span class="c-s">"growth-detector"</span>, <span class="c-k">"cwd"</span>: <span class="c-s">"~/adx/growth-detector-run-scripts"</span>,
+          <span class="c-k">"managers"</span>: { <span class="c-k">"p"</span>: <span class="c-s">"pr-manager"</span> },
+          <span class="c-k">"work"</span>:     { <span class="c-n">1</span>: <span class="c-s">"live-sensor-feedback"</span>, <span class="c-n">2</span>: <span class="c-s">"qc-results"</span> } },
+  <span class="c-k">"ops"</span>: { <span class="c-k">"name"</span>: <span class="c-s">"operations"</span>, <span class="c-k">"managers"</span>: { <span class="c-k">"i"</span>: <span class="c-s">"instance-manager"</span>, <span class="c-k">"d"</span>: <span class="c-s">"prod-manager"</span> } }
+}</pre>
+</section>
+
+<section>
+  <div class="kicker">Chapter 3</div>
+  <h2>How a sidebar exists in a terminal that has none</h2>
+  <div class="prose">
+    <p>Here is the awkward truth: WezTerm has no sidebar. What it has is panes, and a pane can run anything, including a small program that draws a tree. The question is how that pane follows you around. I see three ways.</p>
+  </div>
+  <div class="cards">
+    <div class="card pick"><span class="lbl">B · Left pane in every tab</span><h3>The honest, boring one</h3>
+      <p>Each tab gets a 26-column pane on the left running the same tiny tree program. They all read one registry file and redraw when it changes.</p>
+      <ul><li>Simple and robust, built from stock WezTerm</li><li>One small process per tab</li><li>A toggle key hides or shows all of them</li></ul></div>
+    <div class="card"><span class="lbl">C · One sidebar that follows you</span><h3>The clever one</h3>
+      <p>A single sidebar pane is moved into whichever tab you activate, using WezTerm's move-pane support.</p>
+      <ul><li>One process, always in sync</li><li>Fiddly: a tab switch rearranges panes</li><li>I would not trust it until I had tried it</li></ul></div>
+    <div class="card"><span class="lbl">A · Overlay only</span><h3>The tree as a popup</h3>
+      <p>The same tree, but it appears on a hotkey and vanishes after you jump.</p>
+      <ul><li>Costs no screen space</li><li>Not "always visible", so no roll-up glance</li><li>Good fallback, and nearly free once B exists</li></ul></div>
+  </div>
+  <div class="leaning"><b>My leaning:</b> build B, because it is the version that works on day one, then keep A as the same program launched in a floating pane. Try C only if running a sidebar in every tab turns out to bother you. With sessions as tabs, you can also hide WezTerm's own tab bar, since the sidebar replaces it.</div>
+  <div class="prose">
+    <p>The tree program itself can be small: a Python script using curses (or Textual if you want mouse support), a couple of hundred lines. It reads the registry, watches for changes, and calls <code>wezterm cli activate-pane</code> when you pick something.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 4</div>
+  <h2>What changes in the plan</h2>
+  <div class="prose">
+    <p>Less than you might fear. The registry, the hooks that set state, the context meter, and the relay from revision one all stay. The change is that slice 0 becomes "registry with codes and shortcuts, plus the sidebar program" instead of "picker first". The picker becomes the <code>/</code> filter inside the sidebar, which makes it a feature of the sidebar rather than a separate thing to build.</p>
+    <p>Which brings us back to the one decision that shapes everything else: whether managers live under each repo, under a shared <code>ops</code>, or both. Tell me which is closer to how your managers really work and the codes you want for your repos, and I will build the registry and sidebar against your actual setup instead of my invented one.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var repos = [
+    { code:'gdt', name:'growth-detector', open:true,
+      managers:[{k:'p', name:'pr-manager', gen:3, state:'needs-you', ctx:41}],
+      work:[{k:'1', name:'live-sensor-feedback', state:'idle', ctx:22},{k:'2', name:'qc-results', state:'running', ctx:30}] },
+    { code:'bvr', name:'beaver-lodge', open:false,
+      managers:[{k:'p', name:'pr-manager', gen:1, state:'idle', ctx:18}],
+      work:[{k:'1', name:'decision-map', state:'running', ctx:34}] },
+    { code:'elp', name:'elephant', open:false,
+      managers:[{k:'p', name:'pr-manager', gen:2, state:'running', ctx:52}],
+      work:[{k:'1', name:'spec worktree', state:'needs-you', ctx:55}] },
+    { code:'ops', name:'operations', open:true,
+      managers:[{k:'i', name:'instance-manager', gen:2, state:'running', ctx:63},{k:'d', name:'prod-manager', gen:5, state:'idle', ctx:84}],
+      work:[] }
+  ];
+  repos.forEach(function (r) { r.fold = { managers:true, work:true }; r.managers.forEach(function (s) { s.t = 'managers'; s.repo = r; }); r.work.forEach(function (s) { s.t = 'work'; s.repo = r; }); });
+  var all = []; repos.forEach(function (r) { r.managers.concat(r.work).forEach(function (s) { all.push(s); }); });
+  var cur = repos[0].managers[0], stage = 0, buf = '', rep = null, hint = '', needIdx = -1;
+  var tree = document.getElementById('tree'), chord = document.getElementById('chord'), side = document.getElementById('side');
+
+  function dc(s) { return s === 'needs-you' ? 'need' : s === 'running' ? 'run' : s === 'parked' ? 'park' : 'idle'; }
+  function mini(c) { return '<span class="mini ' + (c >= 80 ? 'hot' : c >= 70 ? 'warn' : '') + '" style="--w:' + c + '%"></span>'; }
+  function roll(r) {
+    var n = 0, hot = 0, run = 0;
+    r.managers.concat(r.work).forEach(function (s) { if (s.state === 'needs-you') n++; if (s.state === 'running') run++; if (s.ctx >= 80) hot++; });
+    return (n ? '<span><span class="dot need"></span> ' + n + '</span>' : '') + (run ? '<span><span class="dot run"></span> ' + run + '</span>' : '') + (hot ? '<span style="color:var(--t-crit)">80%+</span>' : '');
+  }
+  function leaf(s) {
+    return '<div class="node leafn' + (s === cur ? ' sel' : '') + (rep === s.repo && stage === 2 ? ' cand' : '') + '" data-id="' + all.indexOf(s) + '">' +
+      '<span class="key">' + s.k + '</span><span class="dot ' + dc(s.state) + '"></span><span class="lname">' + s.name + (s.gen ? ' g' + s.gen : '') + '</span>' + mini(s.ctx) + '</div>';
+  }
+  function folder(r, t, ri) {
+    var list = r[t]; if (!list.length) return '';
+    var o = r.fold[t];
+    return '<div class="node folder" data-fold="' + ri + ':' + t + '"><span class="caret">' + (o ? '▾' : '▸') + '</span>' + t + '/</div>' + (o ? list.map(leaf).join('') : '');
+  }
+  function draw() {
+    tree.innerHTML = repos.map(function (r, ri) {
+      var h = (stage >= 1 && rep === r) ? ' hit' : '';
+      return '<div class="node' + h + '" data-repo="' + ri + '"><span class="caret">' + (r.open ? '▾' : '▸') + '</span><span class="code">' + r.code + '</span><span class="rname">' + r.name + '</span>' + (r.open ? '' : '<span class="roll">' + roll(r) + '</span>') + '</div>' +
+        (r.open ? folder(r, 'managers', ri) + folder(r, 'work', ri) : '');
+    }).join('');
+    var need = all.filter(function (s) { return s.state === 'needs-you'; }).length, hot = all.filter(function (s) { return s.ctx >= 80; }).length;
+    document.getElementById('n-need').textContent = need; document.getElementById('n-hot').textContent = hot;
+    var c = '';
+    if (stage === 0) c = '<b>jump</b> <span class="buf">' + (buf || '···') + '</span><br>' + (hint || 'type a code: gdt bvr elp ops');
+    else if (stage === 1) c = '<b>jump</b> <span class="buf">' + buf + '</span> ' + (buf.length < 3 ? '' : '→ ' + rep.name) + '<br>' + (buf.length < 3 ? 'keep typing…' : 'now press ' + rep.managers.concat(rep.work).map(function (s) { return s.k; }).join(' / '));
+    chord.innerHTML = c;
+    var s = cur, g = s.gen ? ' g' + s.gen : '';
+    document.getElementById('main-h').innerHTML = '<span><b>' + s.repo.code + '.' + s.k + '</b> ' + s.name + g + '</span><span>' + s.state + ' · ctx ' + s.ctx + '%</span>';
+    var o;
+    if (s.state === 'needs-you') o = '<span class="d">$ claude</span>\n\n● Three items are ready for you. I have not touched anything yet.\n  <span class="n">?</span> Want me to start with the oldest one?\n\n<span class="d">waiting on you since 11:42</span>';
+    else if (s.state === 'running') o = '<span class="d">$ claude</span>\n\n● Working through the queue.\n  <span class="a">⎿</span> reading files…\n  <span class="a">⎿</span> running checks…\n\n<span class="d">last tool call 8s ago</span>';
+    else o = '<span class="d">$ claude</span>\n\n● Done. Nothing pending.\n\n<span class="d">idle · ' + (s.ctx >= 80 ? '<span class="n">handover will trigger at next turn</span>' : 'context healthy') + '</span>';
+    document.getElementById('out').innerHTML = o;
+  }
+  function reset(h) { stage = 0; buf = ''; rep = null; hint = h || ''; }
+  function go(s) { cur = s; s.repo.open = true; s.repo.fold[s.t] = true; reset(''); draw(); }
+
+  tree.addEventListener('click', function (e) {
+    var n = e.target.closest('.node'); if (!n) return; side.focus();
+    if (n.dataset.id != null) { go(all[+n.dataset.id]); return; }
+    if (n.dataset.repo != null) { var r = repos[+n.dataset.repo]; r.open = !r.open; }
+    if (n.dataset.fold) { var p = n.dataset.fold.split(':'); var q = repos[+p[0]]; q.fold[p[1]] = !q.fold[p[1]]; }
+    draw();
+  });
+  side.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'Escape') { reset(''); draw(); return; }
+    if (k === ' ') {
+      e.preventDefault();
+      var need = all.filter(function (s) { return s.state === 'needs-you'; });
+      if (!need.length) { reset('nothing needs you'); draw(); return; }
+      needIdx = (need.indexOf(cur) + 1) % need.length; go(need[needIdx]); return;
+    }
+    if (k === 'Backspace') { buf = buf.slice(0, -1); if (stage === 1 && buf.length < 3) { stage = buf ? 1 : 0; if (!buf) rep = null; } draw(); return; }
+    if (k.length !== 1) return;
+    k = k.toLowerCase();
+    if (stage === 0 || (stage === 1 && buf.length < 3)) {
+      buf += k; stage = 1;
+      var cands = repos.filter(function (r) { return r.code.indexOf(buf) === 0; });
+      if (!cands.length) { reset('no code starts with “' + buf + '”'); draw(); return; }
+      if (buf.length === 3) { rep = cands[0]; stage = 1; var r = rep; r.open = true; }
+      draw(); return;
+    }
+    if (stage === 1 && buf.length === 3) {
+      var hit = rep.managers.concat(rep.work).filter(function (s) { return s.k === k; })[0];
+      if (hit) { go(hit); } else { reset('no shortcut “' + k + '” under ' + rep.code); draw(); }
+    }
+  });
+  draw();
+})();
+</script>

@@ -1,0 +1,24 @@
+{
+  "projects": [
+    {
+      "code": "elp",
+      "name": "elephant",
+      "match": ["~/adx/elephant"],
+      "managers": {
+        "p": "pr-manager",
+        "d": "dev-manager",
+        "i": "issue-manager",
+        "n": "instance-manager",
+        "o": "prod-manager"
+      }
+    },
+    { "code": "srv",  "name": "servers",            "match": ["~/adx/adx-servers"],        "managers": {} },
+    { "code": "gdt",  "name": "growth-detector",    "match": ["~/adx/growth-detector"],    "managers": {} },
+    { "code": "bvr",  "name": "beaver-lodge",       "match": ["~/adx/beaver-lodge"],       "managers": {} },
+    { "code": "fk",   "name": "fire-keeper",        "match": ["~/Projects/fire-keeper"],   "managers": {} },
+    { "code": "noto", "name": "noto",               "match": ["~/Projects/noto"],          "managers": {} },
+    { "code": "sig",  "name": "signal-processing",  "match": ["~/adx/signal-processing"],  "managers": {} },
+    { "code": "pcb",  "name": "pcb",                "match": ["~/adx/pcb"],                "managers": {} },
+    { "code": "ops",  "name": "global managers",    "match": [],                           "managers": {} }
+  ]
+}

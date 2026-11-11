@@ -1,0 +1,4 @@
+# Runtime files the deck rewrites constantly or that only make sense on this machine
+state.json
+panel.log
+moves-undo.json

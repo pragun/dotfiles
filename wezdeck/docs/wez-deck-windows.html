@@ -1,0 +1,197 @@
+<title>Wez Deck Windows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: reading column, one interactive "window wall" that flips between today / A / B. Project hues are fixed per code. */
+:root {
+  --bg:#eef1f1; --surface:#fbfcfc; --ink:#13201f; --muted:#566765; --line:#d3dcdb; --accent:#0b6e75; --accent-soft:#d6ecee; --moved:#b8610a; --moved-soft:#fbe9d6;
+  --c-elp:#2d6cdf; --c-srv:#7a4fd0; --c-gdt:#0b8a6a; --c-fk:#c2410c; --c-noto:#b0307a; --c-sig:#7a6a00; --c-pcb:#4b6b8a; --c-q:#6b7a79;
+  --f-display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a; --moved:#f3a653; --moved-soft:#3a2a14;
+  --c-elp:#7ea6ff; --c-srv:#b79cf5; --c-gdt:#5fd1ac; --c-fk:#f59a6b; --c-noto:#f08bc2; --c-sig:#d8c64a; --c-pcb:#8fb3d4; --c-q:#93a7a4; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a; --moved:#f3a653; --moved-soft:#3a2a14;
+  --c-elp:#7ea6ff; --c-srv:#b79cf5; --c-gdt:#5fd1ac; --c-fk:#f59a6b; --c-noto:#f08bc2; --c-sig:#d8c64a; --c-pcb:#8fb3d4; --c-q:#93a7a4; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.65; padding-block:48px 96px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width:980px; margin:0 auto; display:flex; flex-direction:column; gap:60px; }
+.prose { max-width:66ch; } .prose p { margin:0 0 1em; }
+h1,h2,h3 { font-family:var(--f-display); font-weight:700; line-height:1.12; margin:0; text-wrap:balance; letter-spacing:-0.01em; }
+h1 { font-size:clamp(2.4rem, 7.5vw, 4rem); } h2 { font-size:clamp(1.6rem, 4.5vw, 2.2rem); margin-bottom:14px; } h3 { font-size:1.12rem; margin-bottom:6px; }
+.kicker { font-family:var(--f-mono); font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+.lede { font-size:1.18rem; color:var(--muted); max-width:58ch; margin-top:16px; }
+code { font-family:var(--f-mono); font-size:.86em; background:var(--accent-soft); padding:.1em .4em; border-radius:4px; }
+.leaning { border-left:3px solid var(--accent); padding:4px 0 4px 16px; margin:20px 0; max-width:66ch; } .leaning b:first-child { color:var(--accent); }
+.fig-cap { font-size:.85rem; color:var(--muted); margin-top:10px; max-width:72ch; }
+
+/* rule diagram */
+.rule { display:grid; grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr); gap:10px; align-items:center; margin-top:22px; }
+.rule .tree, .rule .wins { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-family:var(--f-mono); font-size:.84rem; line-height:1.9; min-width:0; }
+.rule .arrow { text-align:center; color:var(--accent); font-size:1.4rem; }
+.rule .l1 { color:var(--accent); font-weight:500; } .rule .l2 { padding-left:18px; color:var(--muted); } .rule .w { padding-left:0; }
+@media (max-width:620px) { .rule { grid-template-columns:1fr; } .rule .arrow { transform:rotate(90deg); } }
+
+/* window wall */
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-top:18px; flex-wrap:wrap; }
+.seg button { font:500 .85rem var(--f-body); background:var(--surface); color:var(--muted); border:0; padding:8px 16px; cursor:pointer; border-right:1px solid var(--line); }
+.seg button:last-child { border-right:0; }
+.seg button[aria-pressed="true"] { background:var(--accent); color:var(--surface); }
+.seg button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.summary { display:flex; gap:22px; flex-wrap:wrap; margin-top:14px; font-family:var(--f-mono); font-size:.82rem; color:var(--muted); }
+.summary b { color:var(--ink); font-weight:500; }
+.wall { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px,1fr)); gap:14px; margin-top:16px; }
+.win { background:var(--surface); border:1px solid var(--line); border-radius:10px; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+.win.new { border-style:dashed; border-color:var(--accent); }
+.win-h { display:flex; justify-content:space-between; gap:8px; padding:9px 12px; border-bottom:1px solid var(--line); font-family:var(--f-mono); font-size:.8rem; align-items:baseline; }
+.win-h b { font-weight:500; } .win-h span { color:var(--muted); }
+.tag-new { color:var(--accent); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; }
+.tabs { padding:10px 10px 12px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; min-height:70px; }
+.chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:6px; padding:2px 8px; font-size:.78rem; max-width:100%; min-width:0; }
+.chip .pd { width:8px; height:8px; border-radius:2px; background:var(--c); flex:none; }
+.chip span.n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chip.mgr { font-weight:600; }
+.chip.shell { border-style:dashed; color:var(--muted); }
+.chip.moved { background:var(--moved-soft); border-color:var(--moved); }
+.legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:.82rem; color:var(--muted); }
+.legend .chip { font-size:.74rem; }
+.sw { display:inline-flex; align-items:center; gap:6px; } .sw i { width:9px; height:9px; border-radius:2px; display:inline-block; background:var(--c); }
+
+/* option cards */
+.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(270px,1fr)); gap:16px; margin-top:22px; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:18px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.card.pick { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.card .lbl { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+.card p { margin:0; color:var(--muted); font-size:.94rem; line-height:1.55; }
+.card .nums { font-family:var(--f-mono); font-size:.8rem; display:flex; gap:16px; flex-wrap:wrap; }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Wez Deck, windows</div>
+  <h1>One window per second layer</h1>
+  <p class="lede">The tree has two layers that matter: the project, and then the folder inside it (managers or work). Your idea is that each second-layer node gets a WezTerm window. I like it, because it makes the macOS window switcher mean the same thing the deck's tree means. Here is what it does to your forty sessions.</p>
+</header>
+
+<section>
+  <div class="kicker">Chapter 1</div>
+  <h2>The rule, and what it costs</h2>
+  <div class="prose">
+    <p>One window for every <em>(project, folder)</em> pair that has something in it. Empty folders get no window, so nothing sits there looking lonely. That is the whole rule. The only wrinkle is Elephant, which has thirteen work sessions and would turn one window into a tab bar you scroll with a sense of despair. So windows get a cap, and when a folder fills up it spills into <code>work 2</code>.</p>
+  </div>
+  <div class="rule" aria-label="Rule diagram">
+    <div class="tree"><span class="l1">elp</span><br><span class="l2">managers/ · 5</span><br><span class="l2">work/ · 13</span><br><span class="l1">srv</span><br><span class="l2">work/ · 7</span><br><span class="l1">noto</span><br><span class="l2">work/ · 2</span></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="wins"><span class="w">window "elp · managers"</span><br><span class="w">windows "elp · work 1", "elp · work 2"</span><br><span class="w">window "srv · work"</span><br><span class="w">window "noto · work"</span></div>
+  </div>
+  <div class="prose" style="margin-top:20px">
+    <p>One piece of good news first. All five of your windows are exactly 161 by 45 cells. A session moved between them keeps its size, so nothing gets resized, which is the thing Claude hates. The deck would check that before every move and refuse if the sizes differed.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 2</div>
+  <h2>Three ways to get there</h2>
+  <div class="prose"><p>Flip between them below. Orange tabs are the ones that would have to move; everything else stays exactly where it is. These are the real session names from right now.</p></div>
+
+  <div class="seg" role="group" aria-label="Layout">
+    <button type="button" data-v="today" aria-pressed="true">Today</button>
+    <button type="button" data-v="A" aria-pressed="false">A · strict</button>
+    <button type="button" data-v="B" aria-pressed="false">B · small ones share</button>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="wall" id="wall"></div>
+  <div class="legend" id="legend"></div>
+  <div class="fig-cap">Bold tabs are managers. Dashed tabs are plain shells, not Claude sessions. "elp" work is capped at 7 per window here, which is adjustable.</div>
+
+  <div class="cards">
+    <div class="card"><span class="lbl">A · Strict</span><h3>Every pair gets its own window</h3>
+      <p>The purest version of your rule. The cost is four windows with one or two tabs in them (noto, sig, pcb), and you will tire of those.</p>
+      <div class="nums"><span>9 windows</span><span>10 moves</span></div></div>
+    <div class="card pick"><span class="lbl">B · Small ones share</span><h3>Anything under three tabs joins "small"</h3>
+      <p>Same rule, except tiny folders share one window until they grow. A folder graduates to its own window at three tabs. Housekeeping lives here too.</p>
+      <div class="nums"><span>7 windows</span><span>10 moves</span></div></div>
+    <div class="card"><span class="lbl">C · Move nothing</span><h3>New sessions follow the rule</h3>
+      <p>Your existing sessions stay put. Anything the deck launches goes to the right window. Windows tidy themselves as old sessions retire.</p>
+      <div class="nums"><span>0 moves</span><span>drifts slowly</span></div></div>
+  </div>
+
+  <div class="leaning"><b>My leaning:</b> B for the target layout, delivered the C way. Adopt the rule for every new session now, and only run the ten moves on the day you say so. That keeps the promise that nothing existing gets touched until you ask.</div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 3</div>
+  <h2>Housekeeping sessions</h2>
+  <div class="prose">
+    <p>You mentioned general housekeeping sessions: the ones that clean up disks, check backups, or do a chore that belongs to no project. They deserve a project of their own so they stop showing up as "unsorted". I would call it <code>hk</code>, give it no working folder match, and start its sessions in your home directory. In layout B they land in the small window, which is exactly the right amount of ceremony for a chore.</p>
+    <p>Two sessions are unsorted today: the chatgpt-export one and a plain <code>ref-well-plate</code> shell. The first looks like housekeeping to me. I would not move either without your say.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 4</div>
+  <h2>A layer between project and session</h2>
+  <div class="prose">
+    <p>You are right that it does not exist yet. Today the tree is project, then <code>managers/</code> or <code>work/</code>, and <code>work/</code> is one flat list. For Elephant that is thirteen sessions in a row, and the only structure is whatever you remember. The fix is a layer of groups inside a project: a handful of named streams of work that sessions belong to.</p>
+  </div>
+  <div class="rule" aria-label="Example tree with groups">
+    <div class="tree"><span class="l1">elp</span><br><span class="l2">managers/ · pr, dev, issue, instance, prod</span><br><span class="l2">mic/ · mic-import, mic-search</span><br><span class="l2">mainline/ · mainline-day, mainline-dawn</span><br><span class="l2">(ungrouped) · 9 more</span></div>
+    <div class="arrow" aria-hidden="true"></div>
+    <div class="wins"><span class="w">Example only. The two groups shown are what a name-prefix guess finds in your Elephant sessions today. The other nine need you to say where they go.</span></div>
+  </div>
+  <div class="prose" style="margin-top:20px">
+    <p><b>How a session gets into a group.</b> By hand, because you are happy to name things: in the panel you select a session and give it a group. The deck suggests a group from the name prefix (<code>mic-</code>, <code>mainline-</code>) and you accept or type your own. The choice is stored against the session's id, so it survives a pause, a resume and a WezTerm restart.</p>
+    <p><b>Keys stay short.</b> Groups organise the tree and the filter but do not add a keystroke. Within a project every session still has one unique key, so <code>elp</code> then the key is still two presses. Typing a group name filters to it.</p>
+    <p><b>Windows.</b> I would not give every group a window, or Elephant alone would spawn a dozen. A group earns its own window at three tabs, the same threshold as the small window above. Everything else stays in the project's work window.</p>
+  </div>
+  <div class="leaning"><b>My leaning:</b> yes to groups, as organisation first and windows second. They cost one name per session and give you the structure you were missing, without touching a single running session.</div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 5</div>
+  <h2>Pulling it together</h2>
+  <div class="prose">
+    <p>The rule gives every session an address of three parts: project, folder, and a key. The window it lives in is just the second part made physical. Under B you would end up with seven windows, none overflowing, and the deck would know which one a new session belongs in without being told. Titling windows so Mission Control shows <code>elp · managers</code> instead of whichever session is active is a small extra I can add later.</p>
+    <p>Groups sit on top of this as the third layer of the tree and leave the window rule alone, except that a big group can pull itself out into a window.</p>
+    <p>Three things to settle: the tab cap per window (I assumed 7), the three-tab threshold for the small window, and the code for housekeeping. Say the word on each, or tell me to go with my defaults, and the deck can start placing new sessions by this rule.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var DATA = {"today": [{"title": "window 1", "isNew": false, "tabs": [{"name": "annotations-via-config", "code": "elp", "kind": "work", "moved": false}, {"name": "mainline-day", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-import", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-search", "code": "elp", "kind": "work", "moved": false}, {"name": "case-reach-signal-processing", "code": "sig", "kind": "work", "moved": false}, {"name": "eav-day", "code": "elp", "kind": "work", "moved": false}, {"name": "wellplate", "code": "elp", "kind": "work", "moved": false}, {"name": "widget-row-template", "code": "elp", "kind": "work", "moved": false}, {"name": "mainline-dawn", "code": "elp", "kind": "work", "moved": false}, {"name": "1032", "code": "elp", "kind": "work", "moved": false}, {"name": "migration-check", "code": "elp", "kind": "work", "moved": false}, {"name": "direct-working-lot", "code": "elp", "kind": "work", "moved": false}]}, {"title": "window 2", "isNew": false, "tabs": [{"name": "fire-keeper-1", "code": "fk", "kind": "work", "moved": false}, {"name": "noto-0d", "code": "noto", "kind": "work", "moved": false}, {"name": "chatgpt-export-mar-11-2026-6d", "code": "?", "kind": "work", "moved": false}, {"name": "save-fixes", "code": "fk", "kind": "work", "moved": false}, {"name": "fk-tests", "code": "fk", "kind": "work", "moved": false}, {"name": "fire-keeper-oct-16", "code": "fk", "kind": "work", "moved": false}, {"name": "noto-55", "code": "noto", "kind": "work", "moved": false}]}, {"title": "window 3", "isNew": false, "tabs": [{"name": "..r-run-scripts", "code": "gdt", "kind": "shell", "moved": false}, {"name": "..ef-well-plate", "code": "?", "kind": "shell", "moved": false}, {"name": "ins-sw-2", "code": "gdt", "kind": "work", "moved": false}, {"name": "read hw-selection-brief.md (Branch)", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-selection", "code": "gdt", "kind": "work", "moved": false}, {"name": "selection-tool", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-agent-dawn", "code": "gdt", "kind": "work", "moved": false}, {"name": "growth-detector-run-scripts-1d", "code": "gdt", "kind": "work", "moved": false}, {"name": "pcb-c6", "code": "pcb", "kind": "work", "moved": false}]}, {"title": "window 9", "isNew": false, "tabs": [{"name": "prod-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "asset-tracking-dawn", "code": "elp", "kind": "work", "moved": false}, {"name": "instance-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "pr-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "issue-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "imaging-data-merge", "code": "elp", "kind": "work", "moved": false}, {"name": "dev-manager", "code": "elp", "kind": "mgr", "moved": false}]}, {"title": "window 16", "isNew": false, "tabs": [{"name": "services-forgejo", "code": "srv", "kind": "work", "moved": false}, {"name": "keycloak", "code": "srv", "kind": "work", "moved": false}, {"name": "services-logging", "code": "srv", "kind": "work", "moved": false}, {"name": "docker-registry", "code": "srv", "kind": "work", "moved": false}, {"name": "secrets", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-44", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-d1", "code": "srv", "kind": "work", "moved": false}]}], "A": [{"title": "elp \u00b7 managers", "isNew": false, "tabs": [{"name": "prod-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "instance-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "pr-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "issue-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "dev-manager", "code": "elp", "kind": "mgr", "moved": false}]}, {"title": "elp \u00b7 work 1", "isNew": false, "tabs": [{"name": "annotations-via-config", "code": "elp", "kind": "work", "moved": false}, {"name": "mainline-day", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-import", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-search", "code": "elp", "kind": "work", "moved": false}, {"name": "eav-day", "code": "elp", "kind": "work", "moved": false}, {"name": "wellplate", "code": "elp", "kind": "work", "moved": false}, {"name": "widget-row-template", "code": "elp", "kind": "work", "moved": false}]}, {"title": "elp \u00b7 work 2", "isNew": true, "tabs": [{"name": "mainline-dawn", "code": "elp", "kind": "work", "moved": true}, {"name": "1032", "code": "elp", "kind": "work", "moved": true}, {"name": "migration-check", "code": "elp", "kind": "work", "moved": true}, {"name": "direct-working-lot", "code": "elp", "kind": "work", "moved": true}, {"name": "asset-tracking-dawn", "code": "elp", "kind": "work", "moved": true}, {"name": "imaging-data-merge", "code": "elp", "kind": "work", "moved": true}]}, {"title": "srv \u00b7 work", "isNew": false, "tabs": [{"name": "services-forgejo", "code": "srv", "kind": "work", "moved": false}, {"name": "keycloak", "code": "srv", "kind": "work", "moved": false}, {"name": "services-logging", "code": "srv", "kind": "work", "moved": false}, {"name": "docker-registry", "code": "srv", "kind": "work", "moved": false}, {"name": "secrets", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-44", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-d1", "code": "srv", "kind": "work", "moved": false}]}, {"title": "gdt \u00b7 work", "isNew": false, "tabs": [{"name": "..r-run-scripts", "code": "gdt", "kind": "shell", "moved": false}, {"name": "..ef-well-plate", "code": "?", "kind": "shell", "moved": false}, {"name": "ins-sw-2", "code": "gdt", "kind": "work", "moved": false}, {"name": "read hw-selection-brief.md (Branch)", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-selection", "code": "gdt", "kind": "work", "moved": false}, {"name": "selection-tool", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-agent-dawn", "code": "gdt", "kind": "work", "moved": false}, {"name": "growth-detector-run-scripts-1d", "code": "gdt", "kind": "work", "moved": false}]}, {"title": "fk \u00b7 work", "isNew": false, "tabs": [{"name": "fire-keeper-1", "code": "fk", "kind": "work", "moved": false}, {"name": "chatgpt-export-mar-11-2026-6d", "code": "?", "kind": "work", "moved": false}, {"name": "save-fixes", "code": "fk", "kind": "work", "moved": false}, {"name": "fk-tests", "code": "fk", "kind": "work", "moved": false}, {"name": "fire-keeper-oct-16", "code": "fk", "kind": "work", "moved": false}]}, {"title": "noto \u00b7 work", "isNew": true, "tabs": [{"name": "noto-0d", "code": "noto", "kind": "work", "moved": true}, {"name": "noto-55", "code": "noto", "kind": "work", "moved": true}]}, {"title": "sig \u00b7 work", "isNew": true, "tabs": [{"name": "case-reach-signal-processing", "code": "sig", "kind": "work", "moved": true}]}, {"title": "pcb \u00b7 work", "isNew": true, "tabs": [{"name": "pcb-c6", "code": "pcb", "kind": "work", "moved": true}]}], "B": [{"title": "elp \u00b7 managers", "isNew": false, "tabs": [{"name": "prod-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "instance-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "pr-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "issue-manager", "code": "elp", "kind": "mgr", "moved": false}, {"name": "dev-manager", "code": "elp", "kind": "mgr", "moved": false}]}, {"title": "elp \u00b7 work 1", "isNew": false, "tabs": [{"name": "annotations-via-config", "code": "elp", "kind": "work", "moved": false}, {"name": "mainline-day", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-import", "code": "elp", "kind": "work", "moved": false}, {"name": "mic-search", "code": "elp", "kind": "work", "moved": false}, {"name": "eav-day", "code": "elp", "kind": "work", "moved": false}, {"name": "wellplate", "code": "elp", "kind": "work", "moved": false}, {"name": "widget-row-template", "code": "elp", "kind": "work", "moved": false}]}, {"title": "elp \u00b7 work 2", "isNew": true, "tabs": [{"name": "mainline-dawn", "code": "elp", "kind": "work", "moved": true}, {"name": "1032", "code": "elp", "kind": "work", "moved": true}, {"name": "migration-check", "code": "elp", "kind": "work", "moved": true}, {"name": "direct-working-lot", "code": "elp", "kind": "work", "moved": true}, {"name": "asset-tracking-dawn", "code": "elp", "kind": "work", "moved": true}, {"name": "imaging-data-merge", "code": "elp", "kind": "work", "moved": true}]}, {"title": "srv \u00b7 work", "isNew": false, "tabs": [{"name": "services-forgejo", "code": "srv", "kind": "work", "moved": false}, {"name": "keycloak", "code": "srv", "kind": "work", "moved": false}, {"name": "services-logging", "code": "srv", "kind": "work", "moved": false}, {"name": "docker-registry", "code": "srv", "kind": "work", "moved": false}, {"name": "secrets", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-44", "code": "srv", "kind": "work", "moved": false}, {"name": "adx-servers-d1", "code": "srv", "kind": "work", "moved": false}]}, {"title": "gdt \u00b7 work", "isNew": false, "tabs": [{"name": "..r-run-scripts", "code": "gdt", "kind": "shell", "moved": false}, {"name": "..ef-well-plate", "code": "?", "kind": "shell", "moved": false}, {"name": "ins-sw-2", "code": "gdt", "kind": "work", "moved": false}, {"name": "read hw-selection-brief.md (Branch)", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-selection", "code": "gdt", "kind": "work", "moved": false}, {"name": "selection-tool", "code": "gdt", "kind": "work", "moved": false}, {"name": "hw-agent-dawn", "code": "gdt", "kind": "work", "moved": false}, {"name": "growth-detector-run-scripts-1d", "code": "gdt", "kind": "work", "moved": false}]}, {"title": "fk \u00b7 work", "isNew": false, "tabs": [{"name": "fire-keeper-1", "code": "fk", "kind": "work", "moved": false}, {"name": "chatgpt-export-mar-11-2026-6d", "code": "?", "kind": "work", "moved": false}, {"name": "save-fixes", "code": "fk", "kind": "work", "moved": false}, {"name": "fk-tests", "code": "fk", "kind": "work", "moved": false}, {"name": "fire-keeper-oct-16", "code": "fk", "kind": "work", "moved": false}]}, {"title": "small \u00b7 work", "isNew": true, "tabs": [{"name": "noto-0d", "code": "noto", "kind": "work", "moved": true}, {"name": "noto-55", "code": "noto", "kind": "work", "moved": true}, {"name": "case-reach-signal-processing", "code": "sig", "kind": "work", "moved": true}, {"name": "pcb-c6", "code": "pcb", "kind": "work", "moved": true}]}]};
+  var CODES = { elp:'elephant', srv:'servers', gdt:'growth-detector', fk:'fire-keeper', noto:'noto', sig:'signal-processing', pcb:'pcb', q:'unsorted' };
+  var cur = 'today';
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function draw() {
+    var v = DATA[cur], moves = 0, tabs = 0, html = '';
+    v.forEach(function (w) {
+      tabs += w.tabs.length;
+      html += '<div class="win' + (w.isNew ? ' new' : '') + '"><div class="win-h"><b>' + esc(w.title) + '</b><span>' + (w.isNew ? '<span class="tag-new">new</span> ' : '') + w.tabs.length + ' tabs</span></div><div class="tabs">';
+      w.tabs.forEach(function (t) {
+        if (t.moved) moves++;
+        html += '<span class="chip ' + t.kind + (t.moved ? ' moved' : '') + '" style="--c:var(--c-' + (t.code === '?' ? 'q' : t.code) + ')" title="' + esc(t.name) + '"><i class="pd"></i><span class="n">' + esc(t.name) + '</span></span>';
+      });
+      html += '</div></div>';
+    });
+    document.getElementById('wall').innerHTML = html;
+    document.getElementById('summary').innerHTML = '<span><b>' + v.length + '</b> windows</span><span><b>' + tabs + '</b> sessions shown</span><span><b>' + moves + '</b> would move</span>';
+    var lg = '';
+    Object.keys(CODES).forEach(function (k) { lg += '<span class="sw"><i style="--c:var(--c-' + k + ')"></i>' + (k === 'q' ? '?' : k) + '</span>'; });
+    lg += '<span class="chip moved"><span class="n">would move</span></span>';
+    document.getElementById('legend').innerHTML = lg;
+    document.querySelectorAll('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === cur ? 'true' : 'false'); });
+  }
+  document.querySelector('.seg').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return; cur = b.getAttribute('data-v'); draw();
+  });
+  draw();
+})();
+</script>

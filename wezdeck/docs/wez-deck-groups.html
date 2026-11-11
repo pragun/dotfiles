@@ -1,0 +1,252 @@
+<title>Wez Deck Groups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: reading column; two dark panel mockups (live triage demo, then the everyday tree) so they read as the real panel. */
+:root {
+  --bg:#eef1f1; --surface:#fbfcfc; --ink:#13201f; --muted:#566765; --line:#d3dcdb; --accent:#0b6e75; --accent-soft:#d6ecee;
+  --term-bg:#0d1415; --term-bar:#162123; --term-fg:#d2dfdd; --term-dim:#7b9290; --term-line:#263537; --term-sel:#1b3a3d;
+  --t-accent:#62c9d1; --t-work:#7ea6ff; --t-idle:#62c48c; --t-need:#f3a653; --t-ok:#62c48c;
+  --f-display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a; --term-bg:#070c0d; --term-bar:#101a1b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#0b1112; --surface:#121b1c; --ink:#e2eeec; --muted:#93a7a4; --line:#243234; --accent:#62c9d1; --accent-soft:#12353a; --term-bg:#070c0d; --term-bar:#101a1b; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.65; padding-block:48px 96px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width:980px; margin:0 auto; display:flex; flex-direction:column; gap:60px; }
+.prose { max-width:66ch; } .prose p { margin:0 0 1em; }
+h1,h2,h3 { font-family:var(--f-display); font-weight:700; line-height:1.12; margin:0; text-wrap:balance; letter-spacing:-0.01em; }
+h1 { font-size:clamp(2.4rem, 7.5vw, 4rem); } h2 { font-size:clamp(1.6rem, 4.5vw, 2.2rem); margin-bottom:14px; } h3 { font-size:1.12rem; margin-bottom:6px; }
+.kicker { font-family:var(--f-mono); font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+.lede { font-size:1.18rem; color:var(--muted); max-width:58ch; margin-top:16px; }
+code { font-family:var(--f-mono); font-size:.86em; background:var(--accent-soft); padding:.1em .4em; border-radius:4px; }
+kbd { font-family:var(--f-mono); font-size:.8em; background:var(--surface); border:1px solid var(--line); border-bottom-width:2px; padding:1px 7px; border-radius:5px; white-space:nowrap; }
+.leaning { border-left:3px solid var(--accent); padding:4px 0 4px 16px; margin:20px 0; max-width:66ch; } .leaning b:first-child { color:var(--accent); }
+.fig-cap { font-size:.85rem; color:var(--muted); margin-top:10px; max-width:72ch; }
+.moments { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:16px; margin-top:22px; }
+.moment { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:18px; min-width:0; }
+.moment .lbl { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+.moment p { margin:6px 0 0; color:var(--muted); font-size:.94rem; line-height:1.55; }
+
+/* terminal panels */
+.term { background:var(--term-bg); color:var(--term-fg); border:1px solid var(--term-line); border-radius:10px; overflow:hidden; font-family:var(--f-mono); font-size:13px; line-height:1.5; margin-top:22px; box-shadow:0 18px 40px -24px rgba(0,0,0,.55); }
+.term-top { background:var(--term-bar); padding:8px 14px; color:var(--term-dim); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.term-top b { color:var(--t-accent); font-weight:500; letter-spacing:.12em; }
+.split { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+.split > div { padding:16px 18px; min-width:0; }
+.split > div + div { border-left:1px solid var(--term-line); }
+@media (max-width:760px) { .split { grid-template-columns:1fr; } .split > div + div { border-left:0; border-top:1px solid var(--term-line); } }
+.demo { outline:0; } .demo:focus-visible { box-shadow:inset 0 0 0 1px var(--t-accent); }
+.prog { color:var(--term-dim); display:flex; justify-content:space-between; gap:10px; }
+.bar { height:4px; background:var(--term-line); border-radius:2px; margin:8px 0 18px; overflow:hidden; }
+.bar i { display:block; height:100%; width:var(--w); background:var(--t-accent); transition:width .2s; }
+.cur-name { font:600 20px var(--f-mono); color:var(--term-fg); word-break:break-all; }
+.cur-sub { color:var(--term-dim); margin-top:2px; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.gchip { background:transparent; border:1px solid var(--term-line); color:var(--term-fg); font:inherit; padding:5px 11px; border-radius:6px; cursor:pointer; display:inline-flex; gap:8px; align-items:center; }
+.gchip .k { width:18px; height:18px; border:1px solid var(--term-line); border-radius:4px; display:grid; place-items:center; font-size:11px; color:var(--term-dim); }
+.gchip:hover, .gchip:focus-visible { border-color:var(--t-accent); outline:0; }
+.gchip.sug { border-color:var(--t-accent); color:var(--t-accent); }
+.gchip.sug .k { border-color:var(--t-accent); color:var(--t-accent); }
+.gchip small { color:var(--term-dim); }
+.hint { margin-top:16px; color:var(--term-dim); font-size:12px; display:flex; gap:14px; flex-wrap:wrap; }
+.hint b { color:var(--term-fg); font-weight:500; }
+#newg { display:none; margin-top:12px; font:14px var(--f-mono); background:transparent; border:1px solid var(--t-accent); color:var(--term-fg); border-radius:6px; padding:5px 10px; width:100%; outline:0; }
+.done { color:var(--t-ok); margin-top:10px; }
+.btn { background:transparent; border:1px solid var(--term-line); color:var(--term-fg); font:inherit; padding:4px 12px; border-radius:6px; cursor:pointer; }
+.btn:hover, .btn:focus-visible { border-color:var(--t-accent); outline:0; }
+
+/* tree preview */
+.tp .p { display:flex; gap:10px; align-items:baseline; }
+.tp .code { color:var(--t-accent); font-weight:600; font-size:14px; letter-spacing:.05em; }
+.tp .dim { color:var(--term-dim); }
+.tp .g { padding-left:18px; margin-top:6px; color:var(--term-dim); display:flex; gap:8px; align-items:baseline; }
+.tp .g b { color:var(--term-fg); font-weight:500; } .tp .g .ct { margin-left:auto; }
+.tp .s { padding-left:40px; display:flex; gap:8px; align-items:center; min-width:0; }
+.tp .s span.n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tp .s.new { color:var(--t-accent); }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--t-idle); flex:none; display:inline-block; }
+.dot.wait { background:var(--t-need); box-shadow:0 0 0 3px color-mix(in srgb, var(--t-need) 28%, transparent); }
+.k2 { width:16px; height:16px; border:1px solid var(--term-line); border-radius:4px; display:inline-grid; place-items:center; font-size:10.5px; color:var(--term-dim); flex:none; }
+.badge { margin-left:auto; border:1px solid var(--term-line); border-radius:99px; padding:0 8px; font-size:11px; color:var(--term-dim); white-space:nowrap; }
+.badge.pop { color:var(--t-accent); border-color:var(--t-accent); }
+.strip { margin:6px 0 6px 40px; padding:6px 10px; border:1px solid var(--t-accent); border-radius:6px; display:flex; gap:14px; flex-wrap:wrap; color:var(--term-dim); background:var(--term-sel); }
+.strip b { color:var(--t-accent); font-weight:600; }
+.rules { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); gap:14px; margin-top:22px; }
+.rule { border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--surface); font-size:.92rem; }
+.rule b { display:block; margin-bottom:2px; } .rule span { color:var(--muted); }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Wez Deck, groups</div>
+  <h1>Sorting forty sessions without losing a Saturday</h1>
+  <p class="lede">Groups are only worth having if putting a session in one costs about a second. If sorting feels like filing taxes, you will do it twice and then stop. So the whole design is about making the first sort fast, and every later change free.</p>
+</header>
+
+<section>
+  <div class="kicker">Chapter 1</div>
+  <h2>Three moments, three tools</h2>
+  <div class="prose"><p>Organising things happens in three very different moods, and one clumsy feature can't serve all of them.</p></div>
+  <div class="moments">
+    <div class="moment"><span class="lbl">The pile</span><h3>Triage mode</h3><p>You sit down once and sort thirteen unsorted sessions. One session at a time, one keypress each. Try it below.</p></div>
+    <div class="moment"><span class="lbl">The new arrival</span><h3>Group on the way in</h3><p>A session you launch from the deck asks for its group as part of its name, so it is never unsorted to begin with.</p></div>
+    <div class="moment"><span class="lbl">The odd one</span><h3>Action strip</h3><p>Shift plus a session's key opens a strip on that row: group it, pause it, or hand it over. Moving one session takes a second.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 2</div>
+  <h2>Triage mode, live</h2>
+  <div class="prose">
+    <p>This is the real flow for Elephant's thirteen work sessions, using their actual names. Click the box to focus it, then press a number to put the session in that group, <kbd>n</kbd> to make a new group, <kbd>↵</kbd> to take the suggestion, <kbd>s</kbd> to skip, and <kbd>z</kbd> to undo. Or just click the chips.</p>
+  </div>
+
+  <div class="term">
+    <div class="term-top"><span><b>DECK</b> &nbsp;organise · elp · work</span><span>nothing is saved in this demo</span></div>
+    <div class="split">
+      <div class="demo" id="demo" tabindex="0" aria-label="Triage demo. Press a number to choose a group.">
+        <div class="prog"><span id="prog-l"></span><span id="prog-r"></span></div>
+        <div class="bar"><i id="prog-b" style="--w:0%"></i></div>
+        <div id="stage"></div>
+        <input id="newg" type="text" autocomplete="off" spellcheck="false" placeholder="name the new group, then ↵">
+        <div class="hint"><span><b>1-9</b> pick group</span><span><b>↵</b> take suggestion</span><span><b>n</b> new group</span><span><b>s</b> skip</span><span><b>z</b> undo</span></div>
+      </div>
+      <div class="tp" id="tree"></div>
+    </div>
+  </div>
+  <div class="fig-cap">The suggestion comes from a shared name prefix. <code>mic-import</code> and <code>mic-search</code> both start with "mic", so the second one is offered "mic" before you have thought about it.</div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 3</div>
+  <h2>Living with it</h2>
+  <div class="prose">
+    <p>Once sorted, the everyday panel gets a layer of folders under <code>work/</code>. Typing the project code still jumps you in, and session keys stay unique within the project, so nothing slows down. Here is the same panel after triage, with the action strip open on one row and a window badge on the group that has grown large enough to earn one.</p>
+  </div>
+  <div class="term">
+    <div class="term-top"><span><b>DECK</b> &nbsp;<span style="color:var(--term-fg)">elp</span> elephant</span><span>1 waiting</span></div>
+    <div class="tp" style="padding:14px 18px 18px">
+      <div class="p"><span class="code">elp</span><span class="dim">managers/</span></div>
+      <div class="s"><span class="k2">p</span><span class="dot"></span><span class="n">pr-manager</span></div>
+      <div class="s"><span class="k2">d</span><span class="dot"></span><span class="n">dev-manager</span></div>
+      <div class="g"><b>mic/</b><span>3 tabs</span><span class="badge pop">own window ↗</span></div>
+      <div class="s"><span class="k2">h</span><span class="dot"></span><span class="n">mic-import</span></div>
+      <div class="s"><span class="k2">j</span><span class="dot wait"></span><span class="n" style="font-weight:600">mic-search</span><span class="badge">waiting</span></div>
+      <div class="strip"><span><b>g</b> group</span><span><b>p</b> pause</span><span><b>h</b> hand over</span><span><b>esc</b> close</span></div>
+      <div class="s"><span class="k2">k</span><span class="dot"></span><span class="n">mic-export</span></div>
+      <div class="g"><b>mainline/</b><span>2 tabs</span></div>
+      <div class="s"><span class="k2">f</span><span class="dot"></span><span class="n">mainline-day</span></div>
+      <div class="s"><span class="k2">w</span><span class="dot"></span><span class="n">mainline-dawn</span></div>
+      <div class="g"><b>ungrouped/</b><span>3 tabs</span></div>
+      <div class="s"><span class="k2">e</span><span class="dot"></span><span class="n">1032</span></div>
+    </div>
+  </div>
+  <div class="fig-cap">Example. <code>mic-export</code> is invented here only to show a group crossing the three-tab line. The strip is open on <code>mic-search</code>.</div>
+</section>
+
+<section>
+  <div class="kicker">Chapter 4</div>
+  <h2>The rules underneath</h2>
+  <div class="rules">
+    <div class="rule"><b>Stored by session id</b><span>A group follows the session through pause, resume and a WezTerm restart. Your tabs can be a mess and the groups still hold.</span></div>
+    <div class="rule"><b>Groups are free to make</b><span>A group exists while it has a member. Empty groups disappear, so nothing needs cleaning up.</span></div>
+    <div class="rule"><b>Renaming is one move</b><span>Ctrl+R on a group header renames it everywhere, the same as renaming a project code.</span></div>
+    <div class="rule"><b>No keystroke tax</b><span>Jumping is still the project code plus one key. Groups are for looking, folding and filtering, not for extra steps.</span></div>
+    <div class="rule"><b>Ungrouped is allowed</b><span>Singletons like <code>1032</code> can live in ungrouped forever. Triage never forces a group.</span></div>
+    <div class="rule"><b>Windows are separate</b><span>A group badge only offers a window at three tabs. The deck never creates or moves one on its own.</span></div>
+  </div>
+  <div class="leaning"><b>My leaning:</b> build triage mode first. It is the one place where a thoughtless design makes people quit, and everything else (the strip, group-on-launch) is a small addition once the stored groups exist. The mouse should work too: dragging a row onto a group header does the same thing as a number key.</div>
+  <div class="prose">
+    <p>The only decision I need from you before building this is how many groups per project you expect. If it is "a handful", number keys 1 to 9 are plenty. If it could reach twenty, I would add a type-to-search box in triage mode as well. For Elephant I would guess six or seven, which fits.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var names = ['annotations-via-config','asset-tracking-dawn','mainline-day','mainline-dawn','mic-import','mic-search','imaging-data-merge','eav-day','wellplate','widget-row-template','1032','migration-check','direct-working-lot'];
+  var assign = {}, groups = ['mic', 'mainline'], skipped = [], history = [], waiting = false;
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function queue() { return names.filter(function (n) { return !assign[n] && skipped.indexOf(n) === -1; }); }
+  function suggest(n) {
+    var pre = n.split('-')[0];
+    if (groups.indexOf(pre) !== -1) return pre;
+    var mates = names.filter(function (m) { return m !== n && m.split('-')[0] === pre; });
+    return mates.length && isNaN(+pre) ? pre : '';
+  }
+  function put(n, g) {
+    if (!g) return;
+    if (groups.indexOf(g) === -1) groups.push(g);
+    assign[n] = g; history.push(n); render();
+  }
+  function render() {
+    var q = queue(), done = names.length - q.length - skipped.length;
+    $('prog-l').textContent = q.length ? 'session ' + (names.length - q.length - skipped.length + 1) + ' of ' + names.length : 'finished';
+    $('prog-r').textContent = done + ' sorted · ' + skipped.length + ' skipped';
+    $('prog-b').style.setProperty('--w', Math.round(100 * (names.length - q.length) / names.length) + '%');
+    var st = $('stage'), n = q[0];
+    if (!n) {
+      st.innerHTML = '<div class="cur-name">All sorted.</div><div class="done">' + done + ' sessions grouped, ' + skipped.length + ' left ungrouped.</div><div class="chips"><button type="button" class="btn" id="again">start over</button></div>';
+      var a = $('again'); if (a) a.onclick = function () { assign = {}; groups = ['mic', 'mainline']; skipped = []; history = []; render(); };
+    } else {
+      var sg = suggest(n), chips = '';
+      groups.forEach(function (g, i) {
+        chips += '<button type="button" class="gchip' + (g === sg ? ' sug' : '') + '" data-g="' + esc(g) + '"><span class="k">' + (i + 1) + '</span>' + esc(g) + (g === sg ? ' <small>suggested</small>' : '') + '</button>';
+      });
+      chips += '<button type="button" class="gchip" id="nbtn"><span class="k">n</span>new group</button>';
+      st.innerHTML = '<div class="cur-name">' + esc(n) + '</div><div class="cur-sub">idle · elp · work</div><div class="chips">' + chips + '</div>' +
+        (sg ? '' : '<div class="hint" style="margin-top:12px">no suggestion for this one</div>');
+    }
+    // tree preview
+    var t = '<div class="p"><span class="code">elp</span><span class="dim">work/</span></div>';
+    groups.forEach(function (g) {
+      var mem = names.filter(function (m) { return assign[m] === g; });
+      if (!mem.length) return;
+      t += '<div class="g"><b>' + esc(g) + '/</b><span class="ct">' + mem.length + (mem.length >= 3 ? ' · own window ↗' : '') + '</span></div>';
+      mem.forEach(function (m) { t += '<div class="s' + (m === history[history.length - 1] ? ' new' : '') + '"><span class="dot"></span><span class="n">' + esc(m) + '</span></div>'; });
+    });
+    var un = names.filter(function (m) { return !assign[m]; });
+    if (un.length) {
+      t += '<div class="g"><b>ungrouped/</b><span class="ct">' + un.length + '</span></div>';
+      un.forEach(function (m) { t += '<div class="s dim" style="color:var(--term-dim)"><span class="dot" style="background:transparent;border:1.5px solid var(--term-dim)"></span><span class="n">' + esc(m) + '</span></div>'; });
+    }
+    $('tree').innerHTML = t;
+    var nb = $('nbtn'); if (nb) nb.onclick = openNew;
+  }
+  function openNew() { waiting = true; var i = $('newg'); i.style.display = 'block'; i.value = ''; i.focus(); }
+  function closeNew() { waiting = false; var i = $('newg'); i.style.display = 'none'; $('demo').focus(); }
+  $('newg').addEventListener('keydown', function (e) {
+    e.stopPropagation();
+    if (e.key === 'Enter') { var v = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); var n = queue()[0]; closeNew(); if (n && v) put(n, v); }
+    else if (e.key === 'Escape') closeNew();
+  });
+  $('stage').addEventListener('click', function (e) {
+    var b = e.target.closest('.gchip[data-g]'); if (!b) return;
+    var n = queue()[0]; if (n) put(n, b.getAttribute('data-g'));
+  });
+  $('demo').addEventListener('keydown', function (e) {
+    if (waiting || e.metaKey || e.ctrlKey || e.altKey) return;
+    var n = queue()[0], k = e.key;
+    if (/^[1-9]$/.test(k) && n && groups[+k - 1]) { e.preventDefault(); put(n, groups[+k - 1]); }
+    else if (k === 'Enter' && n) { e.preventDefault(); var s = suggest(n); if (s) put(n, s); }
+    else if (k === 'n' && n) { e.preventDefault(); openNew(); }
+    else if (k === 's' && n) { e.preventDefault(); skipped.push(n); render(); }
+    else if (k === 'z') {
+      e.preventDefault();
+      if (skipped.length && (!history.length || names.indexOf(skipped[skipped.length - 1]) > names.indexOf(history[history.length - 1]))) skipped.pop();
+      else if (history.length) delete assign[history.pop()];
+      render();
+    }
+  });
+  render();
+})();
+</script>

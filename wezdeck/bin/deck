@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""deck: registry + live model for the Wez Deck panel.
+
+Subcommands (all print one JSON object, exit 0 on success):
+  model                    merge the registry with `wezterm cli list` into the tree the panel draws
+  jump <pane_id>           ask WezTerm to bring that pane's tab and window to the front
+  rename <old> <new>       change a project's code in the registry
+  assign <session_id> <code[/group]|->   pin a session to a project (and group), or '-' to unpin
+
+Stdlib only and Python 3.9 compatible (Hammerspoon runs it with /usr/bin/python3).
+"""
+import base64
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from urllib.parse import unquote, urlparse
+
+HOME = os.path.expanduser("~")
+CFG = os.path.join(HOME, ".config", "wezdeck")
+REG = os.path.join(CFG, "registry.json")
+STATE = os.path.join(CFG, "state.json")
+WEZ = "/Applications/Wezterm.app/Contents/MacOS/wezterm"
+# Letters handed out to work sessions, home row first. Letters a project's managers use are skipped.
+POOL = "asdfghjklqwertyuzxcvbm"
+
+
+def load_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def save_json(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+def expand(p):
+    return HOME + p[1:] if p.startswith("~") else p
+
+
+def list_panes():
+    out = subprocess.run([WEZ, "cli", "list", "--format", "json"], capture_output=True, text=True, timeout=10)
+    if out.returncode != 0:
+        raise RuntimeError(out.stderr.strip() or "wezterm cli list failed")
+    return json.loads(out.stdout)
+
+
+STATUS_MAP = {"busy": "working", "idle": "idle", "waiting": "waiting"}
+SESSIONS_DIR = os.path.join(HOME, ".claude", "sessions")
+
+
+def pane_path(p):
+    return unquote(urlparse(p.get("cwd") or "").path)
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+
+
+def live_claude_sessions():
+    """Read Claude Code's own registry: one json file per running session."""
+    out = []
+    try:
+        names = os.listdir(SESSIONS_DIR)
+    except OSError:
+        return out
+    for fn in names:
+        if not fn.endswith(".json"):
+            continue
+        d = load_json(os.path.join(SESSIONS_DIR, fn), None)
+        if not d or d.get("kind") != "interactive" or not d.get("pid") or not alive(d["pid"]):
+            continue
+        out.append(d)
+    return out
+
+
+def ttys_for(pids):
+    """pid -> '/dev/ttysNNN' using one ps call."""
+    if not pids:
+        return {}
+    r = subprocess.run(["ps", "-o", "pid=,tty=", "-p", ",".join(str(p) for p in pids)],
+                       capture_output=True, text=True, timeout=10)
+    res = {}
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[1] not in ("??", "-"):
+            res[int(parts[0])] = "/dev/" + parts[1]
+    return res
+
+
+def sessions_from(panes):
+    """Every live Claude session that sits in a WezTerm pane, plus one plain shell entry per tab that has no Claude."""
+    by_tty = {p["tty_name"]: p for p in panes if p.get("tty_name")}
+    claude = live_claude_sessions()
+    tty_of = ttys_for([d["pid"] for d in claude])
+    out, tabs_with_claude, detached = [], set(), 0
+    for d in claude:
+        p = by_tty.get(tty_of.get(d["pid"]))
+        if p is None:
+            detached += 1
+            continue
+        tabs_with_claude.add(p["tab_id"])
+        out.append({
+            "tab_id": p["tab_id"], "pane_id": p["pane_id"], "window_id": p["window_id"],
+            "name": d.get("name") or "(unnamed)", "kind": "claude",
+            "state": STATUS_MAP.get(d.get("status"), "idle"), "path": d.get("cwd") or pane_path(p),
+            "session_id": d.get("sessionId"), "pid": d["pid"], "started": d.get("startedAt", 0),
+        })
+    seen = set()
+    for p in panes:
+        if p["tab_id"] in tabs_with_claude or p["tab_id"] in seen:
+            continue
+        seen.add(p["tab_id"])
+        out.append({
+            "tab_id": p["tab_id"], "pane_id": p["pane_id"], "window_id": p["window_id"],
+            "name": p["title"] or "(shell)", "kind": "shell", "state": "", "path": pane_path(p),
+            "session_id": None, "pid": None, "started": 0,
+        })
+    out.sort(key=lambda s: (s["started"] or 0, s["tab_id"]))
+    return out, detached
+
+
+def project_for_path(projects, path):
+    best, best_len = None, -1
+    for pr in projects:
+        for m in pr.get("match", []):
+            m = expand(m)
+            if path.startswith(m) and len(m) > best_len:
+                best, best_len = pr, len(m)
+    return best
+
+
+def build_model():
+    reg = load_json(REG, {"projects": []})
+    projects = reg["projects"]
+    state = load_json(STATE, {"letters": {}})
+    letters = state.setdefault("letters", {})
+    pins = state.setdefault("assign", {})  # session_id -> {"project": code, "group": optional}
+    by_code = {pr["code"]: pr for pr in projects}
+    sessions, detached = sessions_from(list_panes())
+
+    manager_home = {}  # manager name -> projects that declare it
+    for pr in projects:
+        for name in pr.get("managers", {}).values():
+            manager_home.setdefault(name, []).append(pr)
+
+    nodes = {pr["code"]: {"code": pr["code"], "name": pr["name"],
+                          "_mgr": {k: {"key": k, "name": n, "session": None} for k, n in pr.get("managers", {}).items()}}
+             for pr in projects}
+    unsorted, work_by_code = [], {}
+    # Newest session wins a manager slot; any duplicate falls through to ordinary work.
+    for s in sorted(sessions, key=lambda s: -(s["started"] or 0)):
+        pin = pins.get(s["session_id"] or "")
+        if pin and pin.get("project") in by_code:
+            home = by_code[pin["project"]]
+            s["pinned"] = True
+            if pin.get("group"):
+                s["group"] = pin["group"]
+        else:
+            home = project_for_path(projects, s["path"])
+        if s["kind"] == "claude" and s["name"] in manager_home:
+            cands = manager_home[s["name"]]
+            target = home if home in cands else cands[0]
+            slot = next(m for m in nodes[target["code"]]["_mgr"].values() if m["name"] == s["name"])
+            if slot["session"] is None:
+                slot["session"] = s
+                continue
+        if home is None:
+            unsorted.append({"key": "", "name": s["name"], "session": s})
+        else:
+            work_by_code.setdefault(home["code"], []).append(s)
+
+    for code, node in nodes.items():
+        node["managers"] = list(node.pop("_mgr").values())
+        taken = {m["key"] for m in node["managers"]}
+        work = sorted(work_by_code.get(code, []), key=lambda s: (s["started"] or 0, s["tab_id"]))
+        claimed = set()
+        keyed = {}
+        for s in work:  # first keep letters handed out before
+            sid = s["session_id"]
+            k = letters.get(sid) if sid else None
+            if k and k in POOL and k not in taken and k not in claimed:
+                claimed.add(k)
+                keyed[id(s)] = k
+        for s in work:  # then give new sessions the next free letter
+            if s["kind"] == "claude" and id(s) not in keyed:
+                k = next((c for c in POOL if c not in taken and c not in claimed), "")
+                if k:
+                    claimed.add(k)
+                    keyed[id(s)] = k
+                    letters[s["session_id"]] = k
+        node["work"] = [{"key": keyed.get(id(s), ""), "name": s["name"], "session": s} for s in work]
+        live = [m["session"] for m in node["managers"] if m["session"]] + work
+        node["counts"] = {st: sum(1 for s in live if s["state"] == st) for st in ("working", "waiting", "idle")}
+
+    live_ids = {s["session_id"] for s in sessions if s["session_id"]}
+    for k in list(letters):
+        if k not in live_ids:
+            del letters[k]
+    save_json(STATE, state)
+    return {"ts": int(time.time()), "projects": list(nodes.values()), "unsorted": unsorted, "detached": detached}
+
+
+def cmd_model():
+    print(json.dumps(build_model()))
+
+
+def cmd_jump(pane_id):
+    try:
+        wanted = int(float(pane_id))  # Hammerspoon can hand numbers over as "353.0"
+    except ValueError:
+        wanted = -1
+    pane = next((p for p in list_panes() if p["pane_id"] == wanted), None)
+    if pane is None:
+        print(json.dumps({"ok": False, "error": "pane %s is gone" % pane_id}))
+        return 1
+    # Best path: set a user var on the pane's own tty. WezTerm's Lua handler then activates the tab and focuses the window.
+    via = "cli"
+    tty = pane.get("tty_name")
+    if tty:
+        try:
+            val = base64.b64encode(str(time.time()).encode()).decode()
+            fd = os.open(tty, os.O_WRONLY | os.O_NOCTTY)
+            try:
+                os.write(fd, ("\x1b]1337;SetUserVar=deck_jump=%s\x07" % val).encode())
+            finally:
+                os.close(fd)
+            via = "uservar"
+        except OSError:
+            pass
+    # Fallback / belt and braces: the same thing through the CLI.
+    subprocess.run([WEZ, "cli", "activate-tab", "--tab-id", str(pane["tab_id"])], capture_output=True, timeout=10)
+    subprocess.run([WEZ, "cli", "activate-pane", "--pane-id", str(pane["pane_id"])], capture_output=True, timeout=10)
+    print(json.dumps({"ok": True, "via": via, "window_id": pane["window_id"]}))
+    return 0
+
+
+def cmd_rename(old, new):
+    reg = load_json(REG, {"projects": []})
+    if not re.fullmatch(r"[a-z][a-z0-9]{0,5}", new or ""):
+        print(json.dumps({"ok": False, "error": "codes are 1-6 lowercase letters or digits, starting with a letter"}))
+        return 1
+    codes = {p["code"] for p in reg["projects"]}
+    if old not in codes:
+        print(json.dumps({"ok": False, "error": "no project %s" % old}))
+        return 1
+    if new in codes and new != old:
+        print(json.dumps({"ok": False, "error": "%s is already taken" % new}))
+        return 1
+    for p in reg["projects"]:
+        if p["code"] == old:
+            p["code"] = new
+    save_json(REG, reg)
+    print(json.dumps({"ok": True}))
+    return 0
+
+
+def cmd_assign(session_id, spec):
+    """spec is 'code', 'code/group', or '-' to go back to placement by folder."""
+    reg = load_json(REG, {"projects": []})
+    state = load_json(STATE, {"letters": {}})
+    pins = state.setdefault("assign", {})
+    if spec in ("-", ""):
+        pins.pop(session_id, None)
+    else:
+        code, _, group = spec.partition("/")
+        if code not in {p["code"] for p in reg["projects"]}:
+            print(json.dumps({"ok": False, "error": "no project %s. Codes: %s" % (code, " ".join(p["code"] for p in reg["projects"]))}))
+            return 1
+        pins[session_id] = {"project": code, **({"group": group} if group else {})}
+    save_json(STATE, state)
+    print(json.dumps({"ok": True}))
+    return 0
+
+
+def main(argv):
+    try:
+        if len(argv) >= 2 and argv[1] == "model":
+            cmd_model()
+            return 0
+        if len(argv) >= 3 and argv[1] == "jump":
+            return cmd_jump(argv[2])
+        if len(argv) >= 4 and argv[1] == "rename":
+            return cmd_rename(argv[2], argv[3])
+        if len(argv) >= 4 and argv[1] == "assign":
+            return cmd_assign(argv[2], argv[3])
+    except Exception as e:  # the panel shows this instead of silently doing nothing
+        print(json.dumps({"ok": False, "error": str(e)}))
+        return 1
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
