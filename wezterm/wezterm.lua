@@ -314,4 +314,18 @@ config.ssh_domains = {
   
 }
 
+-- Wez Deck: the Hammerspoon panel asks a pane to bring itself forward by setting the user var `deck_jump` on its tty.
+-- Activate the pane's tab, then focus its window, the same way switch_to_window does above.
+wezterm.on('user-var-changed', function(window, pane, name, value)
+  if name == 'deck_maximize' then
+    window:maximize()  -- lets the deck size a brand-new window like the rest before sessions move into it
+    return
+  end
+  if name ~= 'deck_jump' then return end
+  local tab = pane:tab()
+  if tab then tab:activate() end
+  pane:activate()
+  window:focus()
+end)
+
 return config
