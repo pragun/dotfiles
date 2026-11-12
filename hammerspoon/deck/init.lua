@@ -26,6 +26,24 @@ local function deck(args, cb)
   t:start()
 end
 
+local LOG = HOME .. "/.config/wezdeck/panel.log"
+local function plog(msg)
+  local f = io.open(LOG, "a")
+  if f then f:write(msg, "\n"); f:close() end
+end
+
+local shotN = 0
+local function shot(tag)
+  -- Save what the window actually shows on screen, to compare with what the page believes.
+  local w = panel and panel:hswindow()
+  local img = w and w:snapshot()
+  if not img then plog("shot '" .. tostring(tag) .. "': no snapshot (screen recording permission?)"); return end
+  shotN = (shotN % 6) + 1
+  local path = HOME .. "/.config/wezdeck/shot-" .. shotN .. ".png"
+  img:saveToFile(path)
+  plog(os.date("%H:%M:%S") .. " SCREENSHOT shot-" .. shotN .. ".png tag=" .. tostring(tag))
+end
+
 local function push(js)
   if panel then panel:evaluateJavaScript(js) end
 end
@@ -79,6 +97,8 @@ local function handle(body)
     deck({ "jump", string.format("%d", body.pane_id) }, function(code, out)
       if code ~= 0 then hs.alert.show("deck: jump failed\n" .. tostring(out)) end
     end)
+  elseif body.type == "shot" then
+    shot(body.tag)
   elseif body.type == "log" then
     -- Debug trail the panel writes so scrolling problems can be diagnosed from outside the web view.
     local path = HOME .. "/.config/wezdeck/panel.log"
@@ -125,8 +145,14 @@ local function show()
   if w then w:focus() end
   visible = true
   setPanelKeys(true)
-  local lf = io.open(HOME .. "/.config/wezdeck/panel.log", "w")  -- start each opening with a fresh log
-  if lf then lf:write("--- panel shown, frame h=", tostring(panel:frame().h), " w=", tostring(panel:frame().w), "\n"); lf:close() end
+  local logPath = HOME .. "/.config/wezdeck/panel.log"
+  local lf = io.open(logPath, "a")
+  if lf then
+    lf:write("=== panel shown ", os.date("%H:%M:%S"), " frame h=", tostring(panel:frame().h), " w=", tostring(panel:frame().w), "\n")
+    local size = lf:seek("end")
+    lf:close()
+    if size and size > 400000 then os.remove(logPath) end  -- keeps the log from growing forever
+  end
   push("deck.open()")
   if lastModel then push("deck.update(" .. lastModel .. ")") end
   refresh()
