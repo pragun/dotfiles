@@ -78,7 +78,7 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
 </div>
 <div id="sugs"></div>
 <div id="list"></div>
-<div class="foot"><span><b>code</b> then <b>key</b> jumps</span><span><b>↑↓ ↵</b> move, go</span><span><b>space</b> next waiting</span><span><b>/</b> filter</span><span><b>⌥G</b> move session</span><span><b>⌥R</b> rename code</span><span><b>esc</b> close</span><span style="margin-left:auto">build 7</span></div>
+<div class="foot"><span><b>code</b> then <b>key</b> jumps</span><span><b>↑↓ ↵</b> move, go</span><span><b>space</b> next waiting</span><span><b>/</b> filter</span><span><b>⌥G</b> move session</span><span><b>⌥R</b> rename code</span><span><b>esc</b> close</span><span style="margin-left:auto">build 8</span></div>
 
 <script>
 (function () {
@@ -86,7 +86,7 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
   var buf = '', armed = null, sel = 0, filter = '', mode = '', flashTimer = null, renaming = null;
   var collapsed = {}, waitIdx = -1, alignNext = false;
   var DEF = 'type a code to jump, or any other text to search';
-  var assignTarget = null;
+  var assignTarget = null, holdOffset = null;
   function dlog(m) { send({ type: 'log', msg: String(Date.now() % 1000000) + ' ' + m }); }
   function logScroll(tag) {
     var L = $('list'), c = document.querySelector('.sel'), lr = L.getBoundingClientRect(), cr = c ? c.getBoundingClientRect() : null;
@@ -198,6 +198,12 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
     return rows;
   }
   function selectable(r) { return r.t !== 'sect'; }
+  function keyOf(r) {
+    if (r.t === 'proj') return 'p:' + r.p.code;
+    if (r.t === 'group') return 'g:' + r.p.code + '/' + r.g;
+    var ses = r.item.session;
+    return 'i:' + r.p.code + ':' + (ses ? (ses.session_id || 'pane' + ses.pane_id) : 'slot:' + r.item.key + r.item.name);
+  }
 
   function render() {
     var rows = rowsFor(), html = '';
@@ -231,7 +237,8 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
     var cur = document.querySelector('.sel');
     if (cur) {  // scroll by hand: arrows keep the row in view, a typed project code puts its header at the top
       var L = $('list'), rel = cur.getBoundingClientRect().top - L.getBoundingClientRect().top + L.scrollTop;
-      if (alignNext) { L.scrollTop = Math.max(0, rel - 6); alignNext = false; }
+      if (holdOffset !== null) { L.scrollTop = Math.max(0, rel - holdOffset); holdOffset = null; alignNext = false; }
+      else if (alignNext) { L.scrollTop = Math.max(0, rel - 6); alignNext = false; }
       else if (rel < L.scrollTop) L.scrollTop = Math.max(0, rel - 6);
       else if (rel + cur.offsetHeight > L.scrollTop + L.clientHeight) L.scrollTop = rel + cur.offsetHeight - L.clientHeight + 6;
     }
@@ -333,7 +340,19 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
 
   window.deck = {
     open: function () { dlog('open() called'); resetChord(); filter = ''; mode = ''; renaming = null; sel = 0; $('inp').value = ''; $('bar').classList.remove('typing'); $('hint').textContent = DEF; $('hint').className = 'hint'; render(); },
-    update: function (m) { dlog('update() projects=' + m.projects.length); model = m; var n = flatSelectable().length; if (sel >= n) sel = Math.max(0, n - 1); if (armed) armed = model.projects.filter(function (p) { return p.code === armed.code; })[0] || null; render(); },
+    update: function (m) {
+      dlog('update() projects=' + m.projects.length);
+      var cur = flatSelectable()[sel], key = cur ? keyOf(cur) : null;
+      var L = $('list'), el = document.querySelector('.sel');
+      var off = el ? el.getBoundingClientRect().top - L.getBoundingClientRect().top : null;
+      model = m;
+      if (armed) armed = model.projects.filter(function (p) { return p.code === armed.code; })[0] || null;
+      var rows = flatSelectable();
+      if (key) { var i = rows.findIndex(function (x) { return keyOf(x) === key; }); if (i >= 0) sel = i; }
+      if (sel >= rows.length) sel = Math.max(0, rows.length - 1);
+      holdOffset = off;  // render() puts the selected row back at the same height on screen
+      render();
+    },
     flash: flash,
     startMove: startMove,
     startRename: startRename
