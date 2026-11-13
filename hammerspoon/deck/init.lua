@@ -32,6 +32,9 @@ local function plog(msg)
   if f then f:write(msg, "\n"); f:close() end
 end
 
+local LUA_REV = 2
+plog(os.date("%H:%M:%S") .. " === deck module loaded (lua rev " .. LUA_REV .. ")")
+
 local shotN = 0
 local function shot(tag)
   -- Save what the window actually shows on screen, to compare with what the page believes.
@@ -79,11 +82,41 @@ local function refresh()
   end)
 end
 
-local function hide()
+local clickTap, appWatcher, shownAt = nil, nil, 0
+
+local function hide(why)
   if panel then panel:hide() end
   visible = false
   setPanelKeys(false)
+  if clickTap then clickTap:stop() end
+  if appWatcher then appWatcher:stop() end
+  if why then plog(os.date("%H:%M:%S") .. " panel hidden: " .. why) end
 end
+
+-- A floating panel that has lost focus must not stay up: the next Esc would go to whatever you clicked.
+-- So the panel dismisses itself when you click anywhere outside it, or switch to another app.
+local function insidePanel(pt)
+  local f = panel and panel:frame()
+  return f ~= nil and pt.x >= f.x and pt.x <= f.x + f.w and pt.y >= f.y and pt.y <= f.y + f.h
+end
+clickTap = hs.eventtap.new({
+  hs.eventtap.event.types.leftMouseDown,
+  hs.eventtap.event.types.rightMouseDown,
+  hs.eventtap.event.types.otherMouseDown,
+}, function(ev)
+  if visible and not insidePanel(ev:location()) then
+    -- hide after this click has been delivered, so it still reaches what was clicked
+    hs.timer.doAfter(0, function() if visible then hide("click outside the panel") end end)
+  end
+  return false  -- never swallow the click
+end)
+appWatcher = hs.application.watcher.new(function(name, event)
+  -- ignore the activation churn right after opening (the panel itself activates Hammerspoon)
+  if visible and event == hs.application.watcher.activated and name ~= "Hammerspoon"
+      and (hs.timer.secondsSinceEpoch() - shownAt) > 0.5 then
+    hide("switched to " .. tostring(name))
+  end
+end)
 
 local function handle(body)
   if body.type == "hide" then
@@ -135,7 +168,17 @@ local function build()
   panel:html(readFile(DIR .. "/panel.html") or "<body>deck: panel.html missing</body>")
 end
 
+-- The window modal (Option+E) and the deck must never be up together: opening either closes the other.
+local function closeWindowModal()
+  local mm = spoon and spoon.ModalMgr
+  if mm and next(mm.active_list) ~= nil then
+    mm:deactivateAll()
+    plog(os.date("%H:%M:%S") .. " window modal closed because the deck opened")
+  end
+end
+
 local function show()
+  closeWindowModal()
   prevWin = hs.window.focusedWindow()
   if not panel then build() end
   panel:frame(leftHalf())
@@ -144,7 +187,10 @@ local function show()
   local w = panel:hswindow()
   if w then w:focus() end
   visible = true
+  shownAt = hs.timer.secondsSinceEpoch()
   setPanelKeys(true)
+  clickTap:start()
+  appWatcher:start()
   local logPath = HOME .. "/.config/wezdeck/panel.log"
   local lf = io.open(logPath, "a")
   if lf then
@@ -164,6 +210,21 @@ function M.toggle()
     if prevWin then prevWin:focus() end
   else
     show()
+  end
+end
+
+do
+  local mm = spoon and spoon.ModalMgr
+  if mm and not mm._deckWrapped then
+    local original = mm.activate
+    mm.activate = function(self, ...)
+      if visible then
+        hide("window modal opened")
+        if prevWin then prevWin:focus() end
+      end
+      return original(self, ...)
+    end
+    mm._deckWrapped = true
   end
 end
 
