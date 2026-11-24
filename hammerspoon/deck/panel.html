@@ -84,7 +84,7 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
 </div>
 <div id="sugs"></div>
 <div id="list"></div>
-<div class="foot"><span><b>code</b> enter project</span><span><b>key</b> jump</span><span><b>↑↓ ↵</b> move, go</span><span><b>/</b> search</span><span><b>space</b> next waiting</span><span><b>⌥G</b> move session</span><span><b>⌥R</b> rename code</span><span><b>esc</b> back</span><span style="margin-left:auto">build 12</span></div>
+<div class="foot"><span><b>code</b> enter project</span><span><b>key</b> jump</span><span><b>↑↓ ↵</b> move, go</span><span><b>/</b> search</span><span><b>space</b> next waiting</span><span><b>⌥G</b> move session</span><span><b>⌥R</b> rename project code</span><span><b>esc</b> back</span><span style="margin-left:auto">build 13</span></div>
 
 <script>
 (function () {
@@ -188,7 +188,7 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
     var r = flatSelectable()[sel];
     var who = !r ? '' : r.t === 'proj' ? (r.p.code === '?' ? '' : '<b>↵ enter ' + esc(r.p.code) + '</b> · ') : r.t === 'item' ? '<b>↵ jump to ' + esc(r.item.name) + '</b> · ' : '<b>↵ fold</b> · ';
     if (mode === 'assign') return 'moving a session · type a project or project/group · ↑↓ choose · <b>esc</b> cancel';
-    if (mode === 'rename') return 'renaming the project code · <b>↵</b> save · <b>esc</b> cancel';
+    if (mode === 'rename') return 'renaming the project code “' + esc(renaming || '') + '” (sessions are renamed in Claude with /rename) · <b>↵</b> save · <b>esc</b> cancel';
     if (mode === 'filter') return 'typing is on · ' + who + '↑↓ choose · <b>esc</b> ' + (level === 'project' ? 'clear filter' : 'cancel search');
     if (level === 'project') return 'letters are session keys · <b>/</b> filter · ↑↓ ↵ · <b>esc</b> back to all projects';
     if (buf) return 'typing a code: “' + esc(buf) + '” · keep typing, or <b>esc</b> to clear';
@@ -326,18 +326,31 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
   }
   function endAssign() {
     mode = ''; assignTarget = null; $('bar').classList.remove('typing'); $('inp').blur(); $('inp').value = '';
-    $('inp').placeholder = 'search sessions'; $('sugs').style.display = 'none'; renderBar();
+    $('inp').placeholder = 'search sessions'; $('sugs').style.display = 'none'; restoreSel(); renderBar();
+  }
+  var keepKey = null;   // the row you were on before a prompt opened, so it is selected again afterwards
+  function restoreSel() {
+    if (!keepKey) return;
+    var i = flatSelectable().findIndex(function (x) { return keyOf(x) === keepKey; });
+    if (i >= 0) sel = i;
+    keepKey = null;
   }
   function startRename() {
-    if (mode !== '') return;
+    if (mode !== '' && mode !== 'filter') { dlog('startRename ignored: mode=' + mode); return; }
     var code = level === 'project' ? proj : (function () { var r = flatSelectable()[sel]; return r && r.p ? r.p.code : null; })();
     if (!code || code === '?') return;
+    var here = flatSelectable()[sel]; keepKey = here ? keyOf(here) : null;
+    dlog('startRename from mode=' + (mode || '-') + ' code=' + code);
+    if (mode === 'filter') { filter = ''; $('inp').value = ''; $('bar').classList.remove('typing'); $('inp').blur(); }
     renaming = code; mode = 'rename'; render();
   }
   function startMove() {
-    if (mode !== '') return;
+    if (mode !== '' && mode !== 'filter') { dlog('startMove ignored: mode=' + mode); return; }
     var gr = flatSelectable()[sel];
     if (!gr || gr.t !== 'item' || !gr.item.session || !gr.item.session.session_id) { flash('select a Claude session first (arrow keys), then press ⌥G', true); return; }
+    keepKey = keyOf(gr);
+    dlog('startMove from mode=' + (mode || '-') + ' target=' + gr.item.name);
+    filter = '';   // leaving a search: the prompt reuses the bar, and the list goes back to normal
     assignTarget = gr.item.session.session_id; mode = 'assign'; buf = '';
     $('bar').classList.add('typing'); $('inp').placeholder = 'move “' + gr.item.name + '” to project or project/group';
     $('inp').value = ''; $('inp').focus(); sugIdx = 0; renderSugs(); renderBar();
@@ -351,8 +364,8 @@ body { background:var(--bg); color:var(--ink); font:13px/1.45 var(--sans); displ
       if (k === 'Enter') {
         var v = $('ren').value.trim().toLowerCase(), old = renaming; mode = ''; renaming = null;
         if (level === 'project' && proj === old && v) proj = v;   // keep following the project through its new code
-        send({ type: 'rename', old: old, 'new': v }); render();
-      } else if (k === 'Escape') { mode = ''; renaming = null; render(); }
+        restoreSel(); send({ type: 'rename', old: old, 'new': v }); render();
+      } else if (k === 'Escape') { mode = ''; renaming = null; restoreSel(); render(); }
       return;
     }
     if (mode === 'assign') {
